@@ -5,7 +5,7 @@ exec 2>&1 # Unify output
 
 # Image filename
 #image=/tmp/rpi-$$.img
-image=/root/sd/rpi-01.img
+image=/root/tmp_sd/rpi-01.img
 fsdir=${image}p2
 
 ##########################################################################
@@ -59,6 +59,7 @@ yum install -y \
     raspberrypi-config \
     raspberrypi-firstboot \
     raspberrypi-vc-static \
+    raspi-splash \
     denix-bash \
     denix-colors \
     denix-prompt \
@@ -67,8 +68,4 @@ yum install -y \
     @core \
     @hardware-support \
     rpm \
-    mc \
-    xorg-x11-server-Xorg \
-    mesa-dri-drivers \
-    libbcm2835 \
-    pi3d
+    mc

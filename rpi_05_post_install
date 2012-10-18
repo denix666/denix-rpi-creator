@@ -5,11 +5,32 @@ exec 2>&1		# Unify output
 
 # Image filename
 #image=/tmp/rpi-$$.img
-image=/mnt/it1/sd/rpi-01.img
+image=/root/tmp_sd/rpi-01.img
 fsdir=${image}p2
 
 ##########################################################################
 echo "##### $(date) - Post-installation file configuration"
+
+mount -o bind /proc ${fsdir}/proc
+mount -o bind /dev ${fsdir}/dev
+mount -o bind /sys ${fsdir}/sys
+
+cp /etc/resolv.conf ${fsdir}/etc/resolv.conf
+
+cat > ${fsdir}/tmp/reinstall << EOF 
+#!/bin/bash
+echo "Reinstalling within chroot."
+yum reinstall -y \$(rpm -qa --qf "%{name}\n"|egrep -v "^setup$")
+yum clean all
+find / -name '*.rpmsave' -o -name '*.rpmnew' -delete
+echo "Finished reinstalling within chroot. Exit status: $?"
+EOF
+
+chmod 0755 ${fsdir}/tmp/reinstall
+
+chroot ${fsdir} /tmp/reinstall
+
+rm ${fsdir}/tmp/reinstall ${fsdir}/etc/resolv.conf
 
 # /etc/fstab
 cat > $fsdir/etc/fstab << EOF
@@ -48,3 +69,8 @@ cat > ${fsdir}/etc/sysconfig/i18n << EOF
 LANG="en_US.UTF-8"
 SYSFONT="latarcyrheb-sun16"
 EOF
+
+umount ${fsdir}/proc/
+umount ${fsdir}/dev/
+umount ${fsdir}/sys/
+

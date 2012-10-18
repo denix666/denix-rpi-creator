@@ -5,7 +5,7 @@ exec 2>&1		# Unify output
 
 # Image filename
 #image=/tmp/rpi-$$.img
-image=/mnt/it1/sd/rpi-01.img
+image=/root/sd/rpi-01.img
 #image=/home/it1/sd/rpi-01.img
 fsdir=${image}p2
 
