@@ -1,0 +1,50 @@
+#!/bin/bash
+##########################################################################
+set -x
+exec 2>&1		# Unify output
+
+# Image filename
+#image=/tmp/rpi-$$.img
+image=/mnt/it1/sd/rpi-01.img
+fsdir=${image}p2
+
+##########################################################################
+echo "##### $(date) - Post-installation file configuration"
+
+# /etc/fstab
+cat > $fsdir/etc/fstab << EOF
+LABEL="rootfs"          /                       ext4    defaults,noatime                 1 1
+LABEL="boot"            /boot                   vfat    noauto,comment=systemd.automount 1 2
+EOF
+
+# /etc/hosts
+cat > $fsdir/etc/hosts << EOF
+127.0.0.1       localhost localhost.localdomain raspi.local
+EOF
+
+# password for root (password=raspberrypi)
+sed -i 's|root:.*:|root:$6$KW0GGbE5$zlEB9.PbHVh8kmXj1WMFGLJGwwthhU4oXn2oNxHZllbUSzTsVhTZ9jts8RC7uicuUCWyrsZ1e2yEj4ErDLOHQ/:15525:0:99999:7:::|' $fsdir/etc/shadow
+
+# Disable SELINUX
+sed -i 's/^SELINUX=.*$/SELINUX=disabled/g'    ${fsdir}/etc/selinux/config
+
+# hostname
+cat > ${fsdir}/etc/sysconfig/network << EOF
+NETWORKING=yes
+HOSTNAME=raspi.local
+NETWORKWAIT=1
+EOF
+
+# default network configuration (dhcp)
+cat > $fsdir/etc/sysconfig/network-scripts/ifcfg-eth0 << EOF
+DEVICE=eth0
+BOOTPROTO=dhcp
+ONBOOT=yes
+NM_CONTROLLED=yes
+EOF
+
+# i18n settings
+cat > ${fsdir}/etc/sysconfig/i18n << EOF
+LANG="en_US.UTF-8"
+SYSFONT="latarcyrheb-sun16"
+EOF

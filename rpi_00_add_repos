@@ -1,0 +1,34 @@
+#!/bin/bash
+##########################################################################
+cat > /etc/yum.repos.d/raspberry.repo << EOF
+[rpi-remix]
+name=rpi-remix
+failovermethod=priority
+baseurl=http://scotland.proximity.on.ca/~agreene/raspberrypi/raspberrypi-fedora-remix/17/packages/arm/os/
+enabled=0
+gpgcheck=0
+
+[rpi-fedora]
+name=Fedora
+failovermethod=priority
+mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=fedora-17&arch=arm
+enabled=0
+gpgcheck=0
+
+[rpi-fedora-updates]
+name=rpi-updates
+failovermethod=priority
+mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f17&arch=arm
+enabled=0
+gpgcheck=0
+
+[denix-x]
+name=Denix X repo
+failovermethod=priority
+baseurl=
+    http://mirror.os.vc/denix-repo/yum/base/x1/arm
+    http://fedora.os.vc/yum/base/x1/arm
+    http://web.macam.ac.il/~denix/fedora/yum/base/x1/arm
+enabled=0
+gpgcheck=0
+EOF
