@@ -71,6 +71,8 @@ yum install -y \
     @base \
     @core \
     @hardware-support \
+    @admin-tools \
+    NetworkManager-gnome \
     rpm \
     mc \
     nortc \
