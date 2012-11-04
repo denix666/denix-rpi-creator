@@ -64,8 +64,30 @@ yum install -y \
     denix-colors \
     denix-prompt \
     denix-umask \
+    denix-backgrounds \
+    denix-sounds \
+    denix-icons \
+    denix-skel \
     @base \
     @core \
     @hardware-support \
     rpm \
-    mc
+    mc \
+    nortc \
+    xorg-x11-server-Xorg \
+    xorg-x11-xauth \
+    xorg-x11-xinit \
+    xorg-x11-drv-evdev \
+    desktop-backgrounds-basic \
+    mesa-dri-drivers \
+    xorg-x11-drv-fbdev \
+    xorg-x11-utils \
+    dejavu-sans-fonts \
+    dejavu-serif-fonts \
+    dejavu-sans-mono-fonts \
+    dejavu-fonts-common \
+    liberation-sans-fonts \
+    liberation-serif-fonts \
+    liberation-mono-fonts \
+    liberation-narrow-fonts \
+    liberation-fonts-common
