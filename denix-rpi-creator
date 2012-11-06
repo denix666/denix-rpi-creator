@@ -1,0 +1,359 @@
+#!/bin/bash
+
+IMGSIZE=1800
+image=/root/sd/rpi-01.img
+fsdir=${image}p2
+
+# Check if script runs under root
+#################################
+if ! [ "$(whoami)" = "root" ]; then
+    echo "You have to run me with root user priveleges!"
+    exit 1
+fi
+
+
+# Add repos to system
+##########################################################################
+cat > /etc/yum.repos.d/raspberry.repo << EOF
+[rpi-remix]
+name=rpi-remix
+failovermethod=priority
+baseurl=http://scotland.proximity.on.ca/~agreene/raspberrypi/raspberrypi-fedora-remix/17/packages/arm/os/
+enabled=0
+gpgcheck=0
+
+[rpi-fedora]
+name=Fedora
+failovermethod=priority
+mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=fedora-17&arch=arm
+enabled=0
+gpgcheck=0
+
+[rpi-fedora-updates]
+name=rpi-updates
+failovermethod=priority
+mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f17&arch=arm
+enabled=0
+gpgcheck=0
+
+[denix-x]
+name=Denix X repo
+failovermethod=priority
+baseurl=
+    http://mirror.os.vc/denix-repo/yum/base/x1/arm
+    http://fedora.os.vc/yum/base/x1/arm
+    http://web.macam.ac.il/~denix/fedora/yum/base/x1/arm
+enabled=0
+gpgcheck=0
+EOF
+
+# Create image file, partition it
+##########################################################################
+dd if=/dev/zero of=${image} bs=1M count=${IMGSIZE}
+echo -e "n\np\n1\n\n+51M\nn\np\n2\n\n\nt\n1\nc\na\n1\np\nw\n" | fdisk ${image}
+
+# Create image devmappings
+##########################################################################
+kpartx -av ${image}
+
+# Get partitions and make them accessible via loopback+dm
+##########################################################################
+losetup -a
+loopback=$( losetup -a | grep "$image" | cut -d":" -f1 | xargs -I {} basename {} )
+
+# Create filesystems
+##########################################################################
+mkfs -t vfat -n boot   /dev/mapper/${loopback}p1
+mkfs -t ext4 -L rootfs /dev/mapper/${loopback}p2
+
+# Mount filesystems
+##########################################################################
+mkdir -p ${fsdir}
+mount -o rw /dev/mapper/${loopback}p2 ${fsdir}
+mkdir -p ${fsdir}/boot
+mount -o rw /dev/mapper/${loopback}p1 ${fsdir}/boot
+
+# Bind-mount system/kernel filesystems
+##########################################################################
+mkdir -p ${fsdir}/{proc,dev,sys}
+mknod ${fsdir}/dev/console c 5 1
+mknod ${fsdir}/dev/null c 1 3
+mknod ${fsdir}/dev/zero c 1 5
+mount -o bind /proc ${fsdir}/proc/
+mount -o bind /dev  ${fsdir}/dev/
+mount -o bind /sys  ${fsdir}/sys
+
+# Install packages into image
+##########################################################################
+yum clean all
+yum install -y \
+    --disablerepo=\* \
+    --enablerepo=rpi-remix \
+    --enablerepo=rpi-fedora \
+    --enablerepo=rpi-fedora-updates \
+    --enablerepo=denix-x \
+    --installroot="$fsdir" \
+    -x fedora-release \
+    -x fedora-release-notes \
+    -x fedora-logos \
+    -x generic-release \
+    -x system-config-date \
+    -x kernel \
+    -x firstboot \
+    -x xorg-x11-drv-ati \
+    -x xorg-x11-drv-cirrus \
+    -x xorg-x11-drv-geode \
+    -x xorg-x11-drv-intel \
+    -x xorg-x11-drv-mga \
+    -x xorg-x11-drv-nouveau \
+    -x xorg-x11-drv-omap \
+    -x xorg-x11-drv-qxl \
+    -x xorg-x11-drv-vesa \
+    -x xorg-x11-drv-vmware \
+    -x smolt \
+    -x smolt-firstboot \
+    -x kernel-kirkwood \
+    -x ConsoleKit \
+    -x kernel-imx \
+    -x plymouth \
+    -x abrt* \
+    -x nfs-utils \
+    -x talk \
+    -x yp-tools \
+    -x ypbind \
+    -x coolkey \
+    raspberrypi-fedora-remix-logos \
+    raspberrypi-release \
+    raspberrypi-vc-firmware \
+    raspberrypi-release-notes \
+    raspberrypi-rootfs-resize \
+    raspberrypi-kernel \
+    raspberrypi-system-config-date \
+    raspberrypi-config \
+    raspberrypi-firstboot \
+    raspberrypi-vc-static \
+    raspi-splash \
+    denix-bash \
+    denix-colors \
+    denix-prompt \
+    denix-umask \
+    denix-backgrounds \
+    denix-sounds \
+    denix-icons \
+    denix-skel \
+    @base \
+    @core \
+    @fonts \
+    @legacy-fonts \
+    @hardware-support \
+    @admin-tools \
+    NetworkManager-gnome \
+    rpm \
+    mc \
+    nortc \
+    xorg-x11-server-Xorg \
+    xorg-x11-xauth \
+    xorg-x11-xinit \
+    xorg-x11-drv-evdev \
+    desktop-backgrounds-basic \
+    mesa-dri-drivers \
+    xorg-x11-drv-fbdev \
+    xorg-x11-utils \
+    git
+
+# Post installation
+##########################################################################
+cat > ${fsdir}/etc/resolv.conf << EOF
+nameserver 8.8.8.8
+EOF
+
+rm -rf ${fsdir}/etc/yum.repos.d/*
+cat > ${fsdir}/etc/yum.repos.d/raspberrypi.repo << EOF
+[rpi-remix]
+name=rpi-remix
+failovermethod=priority
+baseurl=http://scotland.proximity.on.ca/~agreene/raspberrypi/raspberrypi-fedora-remix/17/packages/arm/os/
+enabled=1
+gpgcheck=0
+
+[rpi-fedora]
+name=Fedora
+failovermethod=priority
+baseurl=
+    http://archive.eu.kernel.org/fedora-secondary/releases/17/Everything/arm/os
+    http://mirror.proserve.nl/fedora-secondary/releases/17/Everything/arm/os
+    http://ftp.cc.uoc.gr/mirrors/linux/fedora-secondary/releases/17/Everything/arm/os
+    http://archive.nl.eu.kernel.org/fedora-secondary/releases/17/Everything/arm/os
+    http://fedora-mirror02.rbc.ru/pub/fedora-secondary/releases/17/Everything/arm/os
+    http://fr2.rpmfind.net/linux/fedora-secondary/releases/17/Everything/arm/os
+    http://ftp.df.lth.se/pub/fedora-secondary/releases/17/Everything/arm/os
+enabled=1
+gpgcheck=0
+
+[rpi-fedora-updates]
+name=rpi-updates
+failovermethod=priority
+baseurl=
+    http://fedora-mirror02.rbc.ru/pub/fedora-secondary/updates/17/arm
+    http://mirror.kiewel-online.ch/secondary/updates/17/arm
+    http://archive.nl.eu.kernel.org/fedora-secondary/updates/17/arm
+    http://ftp.heanet.ie/mirrors/fedora-secondary/updates/17/arm
+    http://mirror.proserve.nl/fedora-secondary/updates/17/arm
+    http://fr2.rpmfind.net/linux/fedora-secondary/updates/17/arm
+    http://ftp.df.lth.se/pub/fedora-secondary/updates/17/arm
+    http://archive.eu.kernel.org/fedora-secondary/updates/17/arm
+enabled=1
+gpgcheck=0
+
+[denix-x]
+name=Denix X repo
+failovermethod=priority
+baseurl=
+    http://mirror.os.vc/denix-repo/yum/base/x1/arm
+    http://fedora.os.vc/yum/base/x1/arm
+    http://web.macam.ac.il/~denix/fedora/yum/base/x1/arm
+enabled=1
+gpgcheck=0
+EOF
+
+cat > ${fsdir}/tmp/reinstall << EOF
+#!/bin/bash
+echo "Reinstalling within chroot."
+yum reinstall -y \$(rpm -qa --qf "%{name}\n"|egrep -v "^setup$")
+yum clean all
+find / -name '*.rpmsave' -o -name '*.rpmnew' -delete
+echo "Finished reinstalling within chroot. Exit status: $?"
+EOF
+chmod 0755 ${fsdir}/tmp/reinstall
+chroot ${fsdir} /tmp/reinstall
+rm ${fsdir}/tmp/reinstall
+
+# /etc/fstab
+cat > $fsdir/etc/fstab << EOF
+LABEL="rootfs"          /                       ext4    defaults,noatime                 1 1
+LABEL="boot"            /boot                   vfat    noauto,comment=systemd.automount 1 2
+EOF
+
+# /etc/hosts
+cat > $fsdir/etc/hosts << EOF
+127.0.0.1       localhost localhost.localdomain denix.rpi
+EOF
+
+chroot  ${fsdir} pwconv
+chroot  ${fsdir} grpconv
+
+chroot ${fsdir} systemctl enable nortc.service
+
+# password for root (password=raspberrypi)
+sed -i 's|root:.*:|root:$6$KW0GGbE5$zlEB9.PbHVh8kmXj1WMFGLJGwwthhU4oXn2oNxHZllbUSzTsVhTZ9jts8RC7uicuUCWyrsZ1e2yEj4ErDLOHQ/:15525:0:99999:7:::|' $fsdir/etc/shadow
+
+# Disable SELINUX
+sed -i 's/^SELINUX=.*$/SELINUX=disabled/g'    ${fsdir}/etc/selinux/config
+
+cat > ${fsdir}/tmp/optimize-systemd << EOF
+#!/bin/bash
+echo "Optimizing systemd..."
+for i in fedora-storage-init-late.service fedora-storage-init.service plymouth-halt.service plymouth-kexec.service plymouth-poweroff.service plymouth-quit.service plymouth-quit-wait.service plymouth-read-write.service plymouth-reboot.service plymouth-start.service mdmonitor.service mdmonitor-takeover.service auditd.service avahi-daemon.service avahi-daemon.socket bluetooth.target dev-hugepages.mount dev-mqueue.mount fedora-configure.service fedora-loadmodules.service fedora-readonly.service ip6tables.service sys-kernel-config.mount sys-kernel-debug.mount systemd-readahead-collect.service systemd-readahead-done.service systemd-readahead-done.timer systemd-readahead-replay.service
+
+        do systemctl mask \$i
+        done
+
+# Missing symlink for sendmail.pid 
+ln -s /var/run /run
+
+# start sm-client
+systemctl enable sm-client.service
+EOF
+chmod 0755 ${fsdir}/tmp/optimize-systemd
+chroot ${fsdir} /tmp/optimize-systemd
+
+
+# hostname
+cat > ${fsdir}/etc/sysconfig/network << EOF
+NETWORKING=yes
+HOSTNAME=denix.rpi
+NETWORKWAIT=1
+EOF
+
+# default network configuration (dhcp)
+cat > $fsdir/etc/sysconfig/network-scripts/ifcfg-eth0 << EOF
+DEVICE=eth0
+BOOTPROTO=dhcp
+ONBOOT=yes
+NM_CONTROLLED=yes
+EOF
+
+# i18n settings
+cat > ${fsdir}/etc/sysconfig/i18n << EOF
+LANG="en_US.UTF-8"
+SYSFONT="latarcyrheb-sun16"
+EOF
+
+# Add issue message
+###################
+cat > ${fsdir}/etc/issue << EOF_ISSUE
+Welcome to DeniX-RPI
+~~~~~~~~~~~~~~~~~~~~
+
+EOF_ISSUE
+
+# Edit SSH properties
+#####################
+sed -i 's/#Protocol 2/Protocol 2/g' ${fsdir}/etc/ssh/sshd_config
+echo "ServerAliveInterval 100" >> ${fsdir}/etc/ssh/ssh_config
+sed -i 's/^#Banner.*$/Banner \/etc\/issue/g' ${fsdir}/etc/ssh/sshd_config
+
+# Disable root mail notifications
+#################################
+echo "root:		/dev/null" >> ${fsdir}/etc/aliases
+chroot ${fsdir} newaliases >/dev/null
+
+# History search
+################
+cat >> ${fsdir}/etc/inputrc << EOF_INPUTRC
+"\e[A": history-search-backward
+"\e[B": history-search-forward
+EOF_INPUTRC
+
+# MC brief mode for root
+########################
+install -m 0700 -d ${fsdir}/root/.cache/mc
+cat > ${fsdir}/root/.cache/mc/panels.ini << EOF_MC_ROOT
+[New Left Panel]
+list_mode=brief
+[New Right Panel]
+list_mode=brief
+EOF_MC_ROOT
+chmod 600 ${fsdir}/root/.mc/panels.ini
+
+# Add public key for root authorization
+#######################################
+install -m 0700 -d ${fsdir}/root/.ssh
+cat > ${fsdir}/root/.ssh/authorized_keys << EOF_SSH
+EOF_SSH
+chmod 600 ${fsdir}/root/.ssh/authorized_keys
+
+# Add rc.local compatibility
+############################
+echo "#! /bin/bash" > ${fsdir}/etc/rc.d/rc.local
+chmod 755 ${fsdir}/etc/rc.d/rc.local
+
+# Edit login.defs
+#################
+sed -i 's/^UID_MIN.*$/UID_MIN			1000/g' ${fsdir}/etc/login.defs
+sed -i 's/^GID_MIN.*$/GID_MIN			1000/g' ${fsdir}/etc/login.defs
+
+# Unmount filesystems
+#####################
+umount ${fsdir}/proc/
+umount ${fsdir}/dev/
+umount ${fsdir}/sys/
+umount ${image}p2/boot
+umount ${image}p2
+rmdir  ${image}p2
+
+# Delete image devmappings
+##########################
+kpartx -dv $image
+
+
