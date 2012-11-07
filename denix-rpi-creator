@@ -1,8 +1,24 @@
 #!/bin/bash
+#
+# Copyright © 2001 - 2012 Denis Salmanovich denis.salmanovich@gmail.com
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+
+[ -f /etc/denix-colors ] && . /etc/denix-colors
 
 IMGSIZE=1800
 image=/root/sd/rpi-01.img
 fsdir=${image}p2
+sd_rootfsdir=/root/sd_rootfsdir
 
 # Check if script runs under root
 #################################
@@ -11,10 +27,10 @@ if ! [ "$(whoami)" = "root" ]; then
     exit 1
 fi
 
-
-# Add repos to system
-##########################################################################
-cat > /etc/yum.repos.d/raspberry.repo << EOF
+add_repos() {
+    # Add repos to system
+    ##########################################################################
+    cat > /etc/yum.repos.d/raspberry.repo << EOF
 [rpi-remix]
 name=rpi-remix
 failovermethod=priority
@@ -46,129 +62,131 @@ baseurl=
 enabled=0
 gpgcheck=0
 EOF
+}
 
-# Create image file, partition it
-##########################################################################
-dd if=/dev/zero of=${image} bs=1M count=${IMGSIZE}
-echo -e "n\np\n1\n\n+51M\nn\np\n2\n\n\nt\n1\nc\na\n1\np\nw\n" | fdisk ${image}
+prepare_image() {
+    # Create image file, partition it
+    dd if=/dev/zero of=${image} bs=1M count=${IMGSIZE}
+    echo -e "n\np\n1\n\n+51M\nn\np\n2\n\n\nt\n1\nc\na\n1\np\nw\n" | fdisk ${image}
 
-# Create image devmappings
-##########################################################################
-kpartx -av ${image}
+    # Create image devmappings
+    kpartx -av ${image}
 
-# Get partitions and make them accessible via loopback+dm
-##########################################################################
-losetup -a
-loopback=$( losetup -a | grep "$image" | cut -d":" -f1 | xargs -I {} basename {} )
+    # Get partitions and make them accessible via loopback+dm
+    losetup -a
+    loopback=$( losetup -a | grep "$image" | cut -d":" -f1 | xargs -I {} basename {} )
 
-# Create filesystems
-##########################################################################
-mkfs -t vfat -n boot   /dev/mapper/${loopback}p1
-mkfs -t ext4 -L rootfs /dev/mapper/${loopback}p2
+    # Create filesystems
+    mkfs -t vfat -n boot   /dev/mapper/${loopback}p1
+    mkfs -t ext4 -L rootfs /dev/mapper/${loopback}p2
 
-# Mount filesystems
-##########################################################################
-mkdir -p ${fsdir}
-mount -o rw /dev/mapper/${loopback}p2 ${fsdir}
-mkdir -p ${fsdir}/boot
-mount -o rw /dev/mapper/${loopback}p1 ${fsdir}/boot
+    # Mount filesystems
+    mkdir -p ${fsdir}
+    mount -o rw /dev/mapper/${loopback}p2 ${fsdir}
+    mkdir -p ${fsdir}/boot
+    mount -o rw /dev/mapper/${loopback}p1 ${fsdir}/boot
 
-# Bind-mount system/kernel filesystems
-##########################################################################
-mkdir -p ${fsdir}/{proc,dev,sys}
-mknod ${fsdir}/dev/console c 5 1
-mknod ${fsdir}/dev/null c 1 3
-mknod ${fsdir}/dev/zero c 1 5
-mount -o bind /proc ${fsdir}/proc/
-mount -o bind /dev  ${fsdir}/dev/
-mount -o bind /sys  ${fsdir}/sys
+    # Bind-mount system/kernel filesystems
+    mkdir -p ${fsdir}/{proc,dev,sys}
+    mknod ${fsdir}/dev/console c 5 1
+    mknod ${fsdir}/dev/null c 1 3
+    mknod ${fsdir}/dev/zero c 1 5
+    mount -o bind /proc ${fsdir}/proc/
+    mount -o bind /dev  ${fsdir}/dev/
+    mount -o bind /sys  ${fsdir}/sys
+}
 
-# Install packages into image
-##########################################################################
-yum clean all
-yum install -y \
-    --disablerepo=\* \
-    --enablerepo=rpi-remix \
-    --enablerepo=rpi-fedora \
-    --enablerepo=rpi-fedora-updates \
-    --enablerepo=denix-x \
-    --installroot="$fsdir" \
-    -x fedora-release \
-    -x fedora-release-notes \
-    -x fedora-logos \
-    -x generic-release \
-    -x system-config-date \
-    -x kernel \
-    -x firstboot \
-    -x xorg-x11-drv-ati \
-    -x xorg-x11-drv-cirrus \
-    -x xorg-x11-drv-geode \
-    -x xorg-x11-drv-intel \
-    -x xorg-x11-drv-mga \
-    -x xorg-x11-drv-nouveau \
-    -x xorg-x11-drv-omap \
-    -x xorg-x11-drv-qxl \
-    -x xorg-x11-drv-vesa \
-    -x xorg-x11-drv-vmware \
-    -x smolt \
-    -x smolt-firstboot \
-    -x kernel-kirkwood \
-    -x ConsoleKit \
-    -x kernel-imx \
-    -x plymouth \
-    -x abrt* \
-    -x nfs-utils \
-    -x talk \
-    -x yp-tools \
-    -x ypbind \
-    -x coolkey \
-    raspberrypi-fedora-remix-logos \
-    raspberrypi-release \
-    raspberrypi-vc-firmware \
-    raspberrypi-release-notes \
-    raspberrypi-rootfs-resize \
-    raspberrypi-kernel \
-    raspberrypi-system-config-date \
-    raspberrypi-config \
-    raspberrypi-firstboot \
-    raspberrypi-vc-static \
-    raspi-splash \
-    denix-bash \
-    denix-colors \
-    denix-prompt \
-    denix-umask \
-    denix-backgrounds \
-    denix-sounds \
-    denix-icons \
-    denix-skel \
-    @base \
-    @core \
-    @fonts \
-    @legacy-fonts \
-    @hardware-support \
-    @admin-tools \
-    NetworkManager-gnome \
-    rpm \
-    mc \
-    nortc \
-    xorg-x11-server-Xorg \
-    xorg-x11-xauth \
-    xorg-x11-xinit \
-    xorg-x11-drv-evdev \
-    desktop-backgrounds-basic \
-    mesa-dri-drivers \
-    xorg-x11-drv-fbdev \
-    xorg-x11-utils \
-    git
+install_sd_rootfsdir() {
+    if ! [ -e $sd_rootfsdir ]; then
+	install -d $sd_rootfsdir
+    fi
 
-# Post installation
-##########################################################################
-cat > ${fsdir}/etc/resolv.conf << EOF
+    # Install packages into image
+    ##########################################################################
+    yum clean all
+    yum install -y \
+	--disablerepo=\* \
+	--enablerepo=rpi-remix \
+	--enablerepo=rpi-fedora \
+	--enablerepo=rpi-fedora-updates \
+	--enablerepo=denix-x \
+	--installroot="$sd_rootfsdir" \
+	-x fedora-release \
+	-x fedora-release-notes \
+	-x fedora-logos \
+	-x generic-release \
+	-x system-config-date \
+	-x kernel \
+	-x firstboot \
+	-x xorg-x11-drv-ati \
+	-x xorg-x11-drv-cirrus \
+	-x xorg-x11-drv-geode \
+	-x xorg-x11-drv-intel \
+	-x xorg-x11-drv-mga \
+	-x xorg-x11-drv-nouveau \
+	-x xorg-x11-drv-omap \
+	-x xorg-x11-drv-qxl \
+	-x xorg-x11-drv-vesa \
+	-x xorg-x11-drv-vmware \
+	-x smolt \
+	-x smolt-firstboot \
+	-x kernel-kirkwood \
+	-x ConsoleKit \
+	-x kernel-imx \
+	-x plymouth \
+	-x abrt* \
+	-x nfs-utils \
+	-x talk \
+	-x yp-tools \
+	-x ypbind \
+	-x coolkey \
+	raspberrypi-fedora-remix-logos \
+	raspberrypi-release \
+	raspberrypi-vc-firmware \
+	raspberrypi-release-notes \
+	raspberrypi-rootfs-resize \
+	raspberrypi-kernel \
+	raspberrypi-system-config-date \
+	raspberrypi-config \
+	raspberrypi-firstboot \
+	raspberrypi-vc-static \
+	raspi-splash \
+	denix-bash \
+	denix-colors \
+	denix-prompt \
+	denix-umask \
+	denix-backgrounds \
+	denix-sounds \
+	denix-icons \
+	denix-skel \
+	@base \
+	@core \
+	@fonts \
+	@legacy-fonts \
+	@hardware-support \
+	NetworkManager-gnome \
+	rpm \
+	mc \
+	nortc \
+	xorg-x11-server-Xorg \
+	xorg-x11-xauth \
+	xorg-x11-xinit \
+	xorg-x11-drv-evdev \
+	desktop-backgrounds-basic \
+	mesa-dri-drivers \
+	xorg-x11-drv-fbdev \
+	xorg-x11-utils \
+	git
+}
+
+post_installation() {
+    # Post installation
+    cat > ${fsdir}/etc/resolv.conf << EOF
 nameserver 8.8.8.8
 EOF
 
-rm -rf ${fsdir}/etc/yum.repos.d/*
-cat > ${fsdir}/etc/yum.repos.d/raspberrypi.repo << EOF
+    rm -rf ${fsdir}/etc/yum.repos.d/*
+    cat > ${fsdir}/etc/yum.repos.d/raspberrypi.repo << EOF
 [rpi-remix]
 name=rpi-remix
 failovermethod=priority
@@ -216,7 +234,7 @@ enabled=1
 gpgcheck=0
 EOF
 
-cat > ${fsdir}/tmp/reinstall << EOF
+    cat > ${fsdir}/tmp/reinstall << EOF
 #!/bin/bash
 echo "Reinstalling within chroot."
 yum reinstall -y \$(rpm -qa --qf "%{name}\n"|egrep -v "^setup$")
@@ -224,33 +242,33 @@ yum clean all
 find / -name '*.rpmsave' -o -name '*.rpmnew' -delete
 echo "Finished reinstalling within chroot. Exit status: $?"
 EOF
-chmod 0755 ${fsdir}/tmp/reinstall
-chroot ${fsdir} /tmp/reinstall
-rm ${fsdir}/tmp/reinstall
+    chmod 0755 ${fsdir}/tmp/reinstall
+    chroot ${fsdir} /tmp/reinstall
+    rm ${fsdir}/tmp/reinstall
 
-# /etc/fstab
-cat > $fsdir/etc/fstab << EOF
+    # /etc/fstab
+    cat > $fsdir/etc/fstab << EOF
 LABEL="rootfs"          /                       ext4    defaults,noatime                 1 1
 LABEL="boot"            /boot                   vfat    noauto,comment=systemd.automount 1 2
 EOF
 
-# /etc/hosts
-cat > $fsdir/etc/hosts << EOF
+    # /etc/hosts
+    cat > $fsdir/etc/hosts << EOF
 127.0.0.1       localhost localhost.localdomain denix.rpi
 EOF
 
-chroot  ${fsdir} pwconv
-chroot  ${fsdir} grpconv
+    chroot  ${fsdir} pwconv
+    chroot  ${fsdir} grpconv
 
-chroot ${fsdir} systemctl enable nortc.service
+    chroot ${fsdir} systemctl enable nortc.service
 
-# password for root (password=raspberrypi)
-sed -i 's|root:.*:|root:$6$KW0GGbE5$zlEB9.PbHVh8kmXj1WMFGLJGwwthhU4oXn2oNxHZllbUSzTsVhTZ9jts8RC7uicuUCWyrsZ1e2yEj4ErDLOHQ/:15525:0:99999:7:::|' $fsdir/etc/shadow
+    # password for root (password=raspberrypi)
+    sed -i 's|root:.*:|root:$6$KW0GGbE5$zlEB9.PbHVh8kmXj1WMFGLJGwwthhU4oXn2oNxHZllbUSzTsVhTZ9jts8RC7uicuUCWyrsZ1e2yEj4ErDLOHQ/:15525:0:99999:7:::|' $fsdir/etc/shadow
 
-# Disable SELINUX
-sed -i 's/^SELINUX=.*$/SELINUX=disabled/g'    ${fsdir}/etc/selinux/config
+    # Disable SELINUX
+    sed -i 's/^SELINUX=.*$/SELINUX=disabled/g'    ${fsdir}/etc/selinux/config
 
-cat > ${fsdir}/tmp/optimize-systemd << EOF
+    cat > ${fsdir}/tmp/optimize-systemd << EOF
 #!/bin/bash
 echo "Optimizing systemd..."
 for i in fedora-storage-init-late.service fedora-storage-init.service plymouth-halt.service plymouth-kexec.service plymouth-poweroff.service plymouth-quit.service plymouth-quit-wait.service plymouth-read-write.service plymouth-reboot.service plymouth-start.service mdmonitor.service mdmonitor-takeover.service auditd.service avahi-daemon.service avahi-daemon.socket bluetooth.target dev-hugepages.mount dev-mqueue.mount fedora-configure.service fedora-loadmodules.service fedora-readonly.service ip6tables.service sys-kernel-config.mount sys-kernel-debug.mount systemd-readahead-collect.service systemd-readahead-done.service systemd-readahead-done.timer systemd-readahead-replay.service
@@ -264,96 +282,132 @@ ln -s /var/run /run
 # start sm-client
 systemctl enable sm-client.service
 EOF
-chmod 0755 ${fsdir}/tmp/optimize-systemd
-chroot ${fsdir} /tmp/optimize-systemd
+    chmod 0755 ${fsdir}/tmp/optimize-systemd
+    chroot ${fsdir} /tmp/optimize-systemd
 
 
-# hostname
-cat > ${fsdir}/etc/sysconfig/network << EOF
+    # hostname
+    cat > ${fsdir}/etc/sysconfig/network << EOF
 NETWORKING=yes
 HOSTNAME=denix.rpi
 NETWORKWAIT=1
 EOF
 
-# default network configuration (dhcp)
-cat > $fsdir/etc/sysconfig/network-scripts/ifcfg-eth0 << EOF
+    # default network configuration (dhcp)
+    cat > $fsdir/etc/sysconfig/network-scripts/ifcfg-eth0 << EOF
 DEVICE=eth0
 BOOTPROTO=dhcp
 ONBOOT=yes
 NM_CONTROLLED=yes
 EOF
 
-# i18n settings
-cat > ${fsdir}/etc/sysconfig/i18n << EOF
+    # i18n settings
+    cat > ${fsdir}/etc/sysconfig/i18n << EOF
 LANG="en_US.UTF-8"
 SYSFONT="latarcyrheb-sun16"
 EOF
 
-# Add issue message
-###################
-cat > ${fsdir}/etc/issue << EOF_ISSUE
+    # Add issue message
+    cat > ${fsdir}/etc/issue << EOF_ISSUE
 Welcome to DeniX-RPI
 ~~~~~~~~~~~~~~~~~~~~
 
 EOF_ISSUE
 
-# Edit SSH properties
-#####################
-sed -i 's/#Protocol 2/Protocol 2/g' ${fsdir}/etc/ssh/sshd_config
-echo "ServerAliveInterval 100" >> ${fsdir}/etc/ssh/ssh_config
-sed -i 's/^#Banner.*$/Banner \/etc\/issue/g' ${fsdir}/etc/ssh/sshd_config
+    # Edit SSH properties
+    sed -i 's/#Protocol 2/Protocol 2/g' ${fsdir}/etc/ssh/sshd_config
+    echo "ServerAliveInterval 100" >> ${fsdir}/etc/ssh/ssh_config
+    sed -i 's/^#Banner.*$/Banner \/etc\/issue/g' ${fsdir}/etc/ssh/sshd_config
 
-# Disable root mail notifications
-#################################
-echo "root:		/dev/null" >> ${fsdir}/etc/aliases
-chroot ${fsdir} newaliases >/dev/null
+    # Disable root mail notifications
+    echo "root:		/dev/null" >> ${fsdir}/etc/aliases
+    chroot ${fsdir} newaliases >/dev/null
 
-# History search
-################
-cat >> ${fsdir}/etc/inputrc << EOF_INPUTRC
+    # History search
+    cat >> ${fsdir}/etc/inputrc << EOF_INPUTRC
 "\e[A": history-search-backward
 "\e[B": history-search-forward
 EOF_INPUTRC
 
-# MC brief mode for root
-########################
-install -m 0700 -d ${fsdir}/root/.cache/mc
-cat > ${fsdir}/root/.cache/mc/panels.ini << EOF_MC_ROOT
+    # MC brief mode for root
+    install -m 0700 -d ${fsdir}/root/.cache/mc
+    cat > ${fsdir}/root/.cache/mc/panels.ini << EOF_MC_ROOT
 [New Left Panel]
 list_mode=brief
 [New Right Panel]
 list_mode=brief
 EOF_MC_ROOT
-chmod 600 ${fsdir}/root/.mc/panels.ini
+    chmod 600 ${fsdir}/root/.mc/panels.ini
 
-# Add public key for root authorization
-#######################################
-install -m 0700 -d ${fsdir}/root/.ssh
-cat > ${fsdir}/root/.ssh/authorized_keys << EOF_SSH
+    # Add public key for root authorization
+    install -m 0700 -d ${fsdir}/root/.ssh
+    cat > ${fsdir}/root/.ssh/authorized_keys << EOF_SSH
 EOF_SSH
-chmod 600 ${fsdir}/root/.ssh/authorized_keys
+    chmod 600 ${fsdir}/root/.ssh/authorized_keys
 
-# Add rc.local compatibility
-############################
-echo "#! /bin/bash" > ${fsdir}/etc/rc.d/rc.local
-chmod 755 ${fsdir}/etc/rc.d/rc.local
+    # Add rc.local compatibility
+    echo "#! /bin/bash" > ${fsdir}/etc/rc.d/rc.local
+    chmod 755 ${fsdir}/etc/rc.d/rc.local
 
-# Edit login.defs
-#################
-sed -i 's/^UID_MIN.*$/UID_MIN			1000/g' ${fsdir}/etc/login.defs
-sed -i 's/^GID_MIN.*$/GID_MIN			1000/g' ${fsdir}/etc/login.defs
+    # Edit login.defs
+    sed -i 's/^UID_MIN.*$/UID_MIN			1000/g' ${fsdir}/etc/login.defs
+    sed -i 's/^GID_MIN.*$/GID_MIN			1000/g' ${fsdir}/etc/login.defs
+}
 
-# Unmount filesystems
-#####################
-umount ${fsdir}/proc/
-umount ${fsdir}/dev/
-umount ${fsdir}/sys/
-umount ${image}p2/boot
-umount ${image}p2
-rmdir  ${image}p2
+close_image() {
+    # Unmount filesystems
+    umount ${fsdir}/proc/
+    umount ${fsdir}/dev/
+    umount ${fsdir}/sys/
+    umount ${image}p2/boot
+    umount ${image}p2
+    rmdir  ${image}p2
 
-# Delete image devmappings
-##########################
-kpartx -dv $image
+    # Delete image devmappings
+    kpartx -dv $image
+}
 
+show_help() {
+    echo "Usage: $0 [--add_repos|--prepare_image|--install_packages|--post_installation|--close_image|-h|--help]"
+}
 
+# Get the user arguments
+for i in $*; do
+    case $i in
+    	-h|--help)
+    	    show_help
+    	    exit 0
+    	    ;;
+	--add_repos)
+	    add_repos
+	    exit 0
+	    ;;
+	--install_sd_rootfsdir)
+	    install_sd_rootfsdir
+	    ;;
+	--prepare_image)
+    	    prepare_image
+    	    exit 0
+	    ;;
+	--install_packages)
+	    install_packages
+	    exit 0
+	    ;;
+	--post_installation)
+	    post_installation
+	    exit 0
+	    ;;
+	--close_image)
+	    close_image
+	    exit 0
+	    ;;
+	*)
+	    #add_repos
+	    #prepare_image
+	    #install_packages
+	    #post_installation
+	    #close_image
+	    show_help
+	    ;;
+    esac
+done
