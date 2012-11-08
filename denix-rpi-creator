@@ -65,9 +65,8 @@ EOF
 }
 
 install_sd_rootfsdir() {
-    if ! [ -e $sd_rootfsdir ]; then
-	install -d $sd_rootfsdir
-    fi
+    rm -rf ${sd_rootfsdir}
+    install -d ${sd_rootfsdir}
 
     # Install packages into image
     ##########################################################################
@@ -217,6 +216,7 @@ EOF
     chroot  ${sd_rootfsdir} grpconv
 
     chroot ${sd_rootfsdir} systemctl enable nortc.service
+    chroot ${sd_rootfsdir} systemctl enable raspi-splash-start.service
 
     # password for root (password=raspberrypi)
     sed -i 's|root:.*:|root:$6$KW0GGbE5$zlEB9.PbHVh8kmXj1WMFGLJGwwthhU4oXn2oNxHZllbUSzTsVhTZ9jts8RC7uicuUCWyrsZ1e2yEj4ErDLOHQ/:15525:0:99999:7:::|' ${sd_rootfsdir}/etc/shadow
@@ -302,12 +302,22 @@ EOF_SSH
     echo "#! /bin/bash" > ${sd_rootfsdir}/etc/rc.d/rc.local
     chmod 755 ${sd_rootfsdir}/etc/rc.d/rc.local
 
+    # Add console colors
+    cat >> ${sd_rootfsdir}/etc/rc.d/rc.local << EOF
+for i in /dev/tty[0-9]*; do
+    echo -en "\\\033[1;32m\\\033[8]" > \$i
+    echo -en "\033[9;0]" > \$i
+done
+EOF
+
     # Edit login.defs
     sed -i 's/^UID_MIN.*$/UID_MIN			1000/g' ${sd_rootfsdir}/etc/login.defs
     sed -i 's/^GID_MIN.*$/GID_MIN			1000/g' ${sd_rootfsdir}/etc/login.defs
 }
 
 prepare_image() {
+    rm -rf ${image}
+
     # Create image file, partition it
     dd if=/dev/zero of=${image} bs=1M count=${IMGSIZE}
     echo -e "n\np\n1\n\n+51M\nn\np\n2\n\n\nt\n1\nc\na\n1\np\nw\n" | fdisk ${image}
@@ -358,6 +368,12 @@ close_image() {
 
     # Delete image devmappings
     kpartx -dv $image
+    
+    # Print message
+    echo
+    echo "Your image is ready! Write it to SD card with this command:"
+    echo "dd if=rpi-01.img of=/dev/xxx bs=1M"
+    echo
 }
 
 show_help() {
@@ -365,22 +381,22 @@ show_help() {
 }
 
 # Get the user arguments
-for i in $*; do
-    case $i in
-    	-h|--help)
-    	    show_help
-    	    exit 0
-    	    ;;
+case $i in
+	-h|--help)
+	    show_help
+	    exit 0
+	    ;;
 	--add_repos)
 	    add_repos
 	    exit 0
 	    ;;
 	--install_sd_rootfsdir)
 	    install_sd_rootfsdir
+	    exit 0
 	    ;;
 	--prepare_image)
-    	    prepare_image
-    	    exit 0
+	    prepare_image
+	    exit 0
 	    ;;
 	--copy_all)
 	    copy_all
@@ -399,12 +415,11 @@ for i in $*; do
 	    exit 0
 	    ;;
 	*)
-	    #add_repos
-	    #prepare_image
-	    #install_packages
-	    #post_installation
-	    #close_image
-	    show_help
+	    add_repos
+	    install_sd_rootfsdir
+	    post_installation
+	    prepare_image
+	    copy_all
+	    close_image
 	    ;;
-    esac
-done
+esac
