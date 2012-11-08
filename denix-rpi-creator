@@ -344,9 +344,6 @@ prepare_image() {
     mknod ${fsdir}/dev/console c 5 1
     mknod ${fsdir}/dev/null c 1 3
     mknod ${fsdir}/dev/zero c 1 5
-    #mount -o bind /proc ${fsdir}/proc
-    #mount -o bind /dev  ${fsdir}/dev
-    #mount -o bind /sys  ${fsdir}/sys
 }
 
 copy_all() {
@@ -359,9 +356,6 @@ copy_all() {
 
 close_image() {
     # Unmount filesystems
-    #umount ${fsdir}/proc
-    #umount ${fsdir}/dev
-    #umount ${fsdir}/sys
     umount ${image}p2/boot
     umount ${image}p2
     rmdir  ${image}p2
@@ -377,7 +371,17 @@ close_image() {
 }
 
 show_help() {
-    echo "Usage: $0 [--add_repos|--prepare_image|--install_packages|--post_installation|--close_image|-h|--help]"
+    echo "Usage: $0 <options>"
+    echo
+    echo "Options:"
+    echo "	--add_repos"
+    echo "	--install_sd_rootfsdir"
+    echo "	--post_installation"
+    echo "	--prepare_image"
+    echo "	--copy_all"
+    echo "	--close_image"
+    echo "	--help"
+    echo "	--all  - Build completly the system"
 }
 
 # Get the user arguments
@@ -414,12 +418,17 @@ case $i in
 	    close_image
 	    exit 0
 	    ;;
-	*)
+	--all)
 	    add_repos
 	    install_sd_rootfsdir
 	    post_installation
 	    prepare_image
 	    copy_all
 	    close_image
+	    exit 0
+	    ;;
+	*)
+	    show_help
+	    exit 0
 	    ;;
 esac
