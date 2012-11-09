@@ -13,17 +13,19 @@
 # GNU General Public License for more details.
 #
 
-[ -f /etc/denix-colors ] && . /etc/denix-colors
-
 IMGSIZE=1800
 image=/root/sd/rpi-01.img
 fsdir=${image}p2
 sd_rootfsdir=/root/sd_rootfsdir
 
+[ -f /etc/denix-colors ] && . /etc/denix-colors
+
 # Check if script runs under root
 #################################
 if ! [ "$(whoami)" = "root" ]; then
+    $color_Red
     echo "You have to run me with root user priveleges!"
+    $color_Off
     exit 1
 fi
 
@@ -65,6 +67,7 @@ EOF
 }
 
 install_sd_rootfsdir() {
+    $color_Purple
     rm -rf ${sd_rootfsdir}
     install -d ${sd_rootfsdir}
 
@@ -78,75 +81,77 @@ install_sd_rootfsdir() {
 	--enablerepo=rpi-fedora-updates \
 	--enablerepo=denix-x \
 	--installroot="$sd_rootfsdir" \
-	-x fedora-release \
-	-x fedora-release-notes \
-	-x fedora-logos \
-	-x generic-release \
-	-x system-config-date \
-	-x kernel \
-	-x firstboot \
-	-x xorg-x11-drv-ati \
-	-x xorg-x11-drv-cirrus \
-	-x xorg-x11-drv-geode \
-	-x xorg-x11-drv-intel \
-	-x xorg-x11-drv-mga \
-	-x xorg-x11-drv-nouveau \
-	-x xorg-x11-drv-omap \
-	-x xorg-x11-drv-qxl \
-	-x xorg-x11-drv-vesa \
-	-x xorg-x11-drv-vmware \
-	-x smolt \
-	-x smolt-firstboot \
-	-x kernel-kirkwood \
-	-x ConsoleKit \
-	-x kernel-imx \
-	-x plymouth \
-	-x abrt* \
-	-x nfs-utils \
-	-x talk \
-	-x yp-tools \
-	-x ypbind \
-	-x coolkey \
-	raspberrypi-fedora-remix-logos \
-	raspberrypi-release \
-	raspberrypi-vc-firmware \
-	raspberrypi-release-notes \
-	raspberrypi-rootfs-resize \
-	raspberrypi-kernel \
-	raspberrypi-system-config-date \
-	raspberrypi-config \
-	raspberrypi-firstboot \
-	raspberrypi-vc-static \
-	raspi-splash \
-	denix-bash \
-	denix-colors \
-	denix-prompt \
-	denix-umask \
-	denix-backgrounds \
-	denix-sounds \
-	denix-icons \
-	denix-skel \
-	@base \
-	@core \
-	@fonts \
-	@legacy-fonts \
-	@hardware-support \
-	NetworkManager-gnome \
-	rpm \
-	mc \
-	nortc \
-	xorg-x11-server-Xorg \
-	xorg-x11-xauth \
-	xorg-x11-xinit \
-	xorg-x11-drv-evdev \
-	desktop-backgrounds-basic \
-	mesa-dri-drivers \
-	xorg-x11-drv-fbdev \
-	xorg-x11-utils \
-	git
+        -x fedora-release \
+        -x fedora-release-notes \
+        -x fedora-logos \
+        -x generic-release \
+        -x system-config-date \
+        -x kernel \
+        -x firstboot \
+        -x xorg-x11-drv-ati \
+        -x xorg-x11-drv-cirrus \
+        -x xorg-x11-drv-geode \
+        -x xorg-x11-drv-intel \
+        -x xorg-x11-drv-mga \
+        -x xorg-x11-drv-nouveau \
+        -x xorg-x11-drv-omap \
+        -x xorg-x11-drv-qxl \
+        -x xorg-x11-drv-vesa \
+        -x xorg-x11-drv-vmware \
+        -x smolt \
+        -x smolt-firstboot \
+        -x kernel-kirkwood \
+        -x ConsoleKit \
+        -x kernel-imx \
+        -x plymouth \
+        -x abrt* \
+        -x nfs-utils \
+        -x talk \
+        -x yp-tools \
+        -x ypbind \
+        -x coolkey \
+        raspberrypi-fedora-remix-logos \
+        raspberrypi-release \
+        raspberrypi-vc-firmware \
+        raspberrypi-release-notes \
+        raspberrypi-rootfs-resize \
+        raspberrypi-kernel \
+        raspberrypi-system-config-date \
+        raspberrypi-config \
+        raspberrypi-firstboot \
+        raspberrypi-vc-static \
+        raspi-splash \
+        denix-bash \
+        denix-colors \
+        denix-prompt \
+        denix-umask \
+        denix-backgrounds \
+        denix-sounds \
+        denix-icons \
+        denix-skel \
+        @base \
+        @core \
+        @fonts \
+        @legacy-fonts \
+        @hardware-support \
+        NetworkManager-gnome \
+        rpm \
+        mc \
+        nortc \
+        xorg-x11-server-Xorg \
+        xorg-x11-xauth \
+        xorg-x11-xinit \
+        xorg-x11-drv-evdev \
+        desktop-backgrounds-basic \
+        mesa-dri-drivers \
+        org-x11-drv-fbdev \
+        xorg-x11-utils \
+        git
+    $color_Off
 }
 
 post_installation() {
+    $color_White
     # Post installation
     cat > ${sd_rootfsdir}/etc/resolv.conf << EOF
 nameserver 8.8.8.8
@@ -313,9 +318,11 @@ EOF
     # Edit login.defs
     sed -i 's/^UID_MIN.*$/UID_MIN			1000/g' ${sd_rootfsdir}/etc/login.defs
     sed -i 's/^GID_MIN.*$/GID_MIN			1000/g' ${sd_rootfsdir}/etc/login.defs
+    $color_Off
 }
 
 prepare_image() {
+    $color_White
     rm -rf ${image}
 
     # Create image file, partition it
@@ -344,17 +351,37 @@ prepare_image() {
     mknod ${fsdir}/dev/console c 5 1
     mknod ${fsdir}/dev/null c 1 3
     mknod ${fsdir}/dev/zero c 1 5
+    $color_Off
 }
 
 copy_all() {
     # Copy sd rootfs to image
+    $color_Cyan
     cp -rpv ${sd_rootfsdir}/boot/* ${fsdir}/boot
     for i in bin etc home lib media mnt opt root run sbin srv tmp usr var; do
 	cp -rpv ${sd_rootfsdir}/$i ${fsdir}
     done
+    $color_Off
+}
+
+
+reinstall_rootfs() {
+    cat << EOF >${sd_rootfsdir}/tmp/reinstall
+#!/bin/bash
+echo "Reinstalling within chroot."
+yum reinstall -y \$(rpm -qa --qf "%{name}\n"|egrep -v "^setup$")
+yum clean all
+find / -name '*.rpmsave' -o -name '*.rpmnew' -delete
+EOF
+    chmod 0755 ${fsdir}/tmp/reinstall
+    $color_Blue
+    chroot ${fsdir} /tmp/reinstall
+    $color_Off
+    rm ${fsdir}/tmp/reinstall
 }
 
 close_image() {
+    $color_White
     # Unmount filesystems
     umount ${image}p2/boot
     umount ${image}p2
@@ -364,24 +391,29 @@ close_image() {
     kpartx -dv $image
     
     # Print message
+    $color_Yellow
     echo
     echo "Your image is ready! Write it to SD card with this command:"
     echo "dd if=rpi-01.img of=/dev/xxx bs=1M"
     echo
+    $color_Off
 }
 
 show_help() {
+    $color_Yellow
     echo "Usage: $0 <options>"
     echo
     echo "Options:"
-    echo "	--add_repos"
-    echo "	--install_sd_rootfsdir"
-    echo "	--post_installation"
-    echo "	--prepare_image"
-    echo "	--copy_all"
-    echo "	--close_image"
-    echo "	--help"
+    echo "	--add_repos  - Add helper repositories (as disabled) to current system for installation proccess"
+    echo "	--install_sd_rootfsdir  - Install sd root file system"
+    echo "	--post_installation  - Post installation proccess, patching the root file system"
+    echo "	--prepare_image  - Create and prepare sd image file"
+    echo "	--copy_all  - Copy installed sd root file system to the sd image file"
+    echo "	--close_image  - Close image file and make it ready to use"
+    echo "	--help  - Show this help message"
+    echo "	--reinstall_rootfs  - Reinstall all packages in the sd root file system"
     echo "	--all  - Build completly the system"
+    $color_Off
 }
 
 # Get the user arguments
@@ -400,6 +432,10 @@ case $1 in
 	    ;;
 	--prepare_image)
 	    prepare_image
+	    exit 0
+	    ;;
+	--reinstall_rootfs)
+	    reinstall_rootfs
 	    exit 0
 	    ;;
 	--copy_all)

@@ -1,0 +1,3 @@
+USER=root
+PROGRAM=/usr/share/denix-rpi-creator/denix-rpi-creator
+SESSION=true
