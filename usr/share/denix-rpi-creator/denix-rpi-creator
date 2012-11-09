@@ -137,6 +137,7 @@ install_sd_rootfsdir() {
         NetworkManager-gnome \
         rpm \
         mc \
+        ntp \
         nortc \
         xorg-x11-server-Xorg \
         xorg-x11-xauth \
@@ -221,7 +222,7 @@ EOF
     chroot  ${sd_rootfsdir} grpconv
 
     chroot ${sd_rootfsdir} systemctl enable nortc.service
-    chroot ${sd_rootfsdir} systemctl enable raspi-splash-start.service
+    chroot ${sd_rootfsdir} systemctl enable ntpdate.service
 
     # password for root (password=raspberrypi)
     sed -i 's|root:.*:|root:$6$KW0GGbE5$zlEB9.PbHVh8kmXj1WMFGLJGwwthhU4oXn2oNxHZllbUSzTsVhTZ9jts8RC7uicuUCWyrsZ1e2yEj4ErDLOHQ/:15525:0:99999:7:::|' ${sd_rootfsdir}/etc/shadow
