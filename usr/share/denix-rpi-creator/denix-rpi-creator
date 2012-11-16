@@ -353,14 +353,17 @@ prepare_image() {
     mknod ${fsdir}/dev/null c 1 3
     mknod ${fsdir}/dev/zero c 1 5
     $color_Off
+    sleep 5
 }
 
 copy_all() {
     # Copy sd rootfs to image
     $color_Cyan
-    cp -rpv ${sd_rootfsdir}/boot/* ${fsdir}/boot
+    echo "Copying boot..."
+    cp -rp ${sd_rootfsdir}/boot/* ${fsdir}/boot
     for i in bin etc home lib media mnt opt root run sbin srv tmp usr var; do
-	cp -rpv ${sd_rootfsdir}/$i ${fsdir}
+	echo "Copying $i..."
+	cp -rp ${sd_rootfsdir}/$i ${fsdir}
     done
     $color_Off
 }
