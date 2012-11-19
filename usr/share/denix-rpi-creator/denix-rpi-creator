@@ -14,7 +14,7 @@
 #
 
 IMGSIZE=1800
-image=/root/sd/rpi-01.img
+image=/root/rpi-01.img
 fsdir=${image}p2
 sd_rootfsdir=/root/sd_rootfsdir
 
