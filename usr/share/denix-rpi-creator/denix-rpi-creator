@@ -146,6 +146,7 @@ install_sd_rootfsdir() {
         dbus-x11 \
         libimobiledevice \
         iso-codes \
+        alsa-utils \
         desktop-backgrounds-basic \
         mesa-dri-drivers \
         org-x11-drv-fbdev \
