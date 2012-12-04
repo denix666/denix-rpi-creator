@@ -17,6 +17,8 @@ IMGSIZE=1800
 image=/root/rpi-01.img
 fsdir=${image}p2
 sd_rootfsdir=/root/sd_rootfsdir
+version="18"
+
 
 [ -f /etc/denix-colors ] && . /etc/denix-colors
 
@@ -36,21 +38,21 @@ add_repos() {
 [rpi-remix]
 name=rpi-remix
 failovermethod=priority
-baseurl=http://scotland.proximity.on.ca/~agreene/raspberrypi/raspberrypi-fedora-remix/17/packages/arm/os/
+baseurl=http://scotland.proximity.on.ca/~agreene/raspberrypi/raspberrypi-fedora-remix/${version}/packages/arm/os/
 enabled=0
 gpgcheck=0
 
 [rpi-fedora]
 name=Fedora
 failovermethod=priority
-mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=fedora-17&arch=arm
+mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=fedora-${version}&arch=arm
 enabled=0
 gpgcheck=0
 
 [rpi-fedora-updates]
 name=rpi-updates
 failovermethod=priority
-mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f17&arch=arm
+mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f${version}&arch=arm
 enabled=0
 gpgcheck=0
 
@@ -167,7 +169,7 @@ EOF
 [rpi-remix]
 name=rpi-remix
 failovermethod=priority
-baseurl=http://scotland.proximity.on.ca/~agreene/raspberrypi/raspberrypi-fedora-remix/17/packages/arm/os/
+baseurl=http://scotland.proximity.on.ca/~agreene/raspberrypi/raspberrypi-fedora-remix/${version}/packages/arm/os/
 enabled=1
 gpgcheck=0
 
@@ -175,13 +177,13 @@ gpgcheck=0
 name=Fedora
 failovermethod=priority
 baseurl=
-    http://archive.eu.kernel.org/fedora-secondary/releases/17/Everything/arm/os
-    http://mirror.proserve.nl/fedora-secondary/releases/17/Everything/arm/os
-    http://ftp.cc.uoc.gr/mirrors/linux/fedora-secondary/releases/17/Everything/arm/os
-    http://archive.nl.eu.kernel.org/fedora-secondary/releases/17/Everything/arm/os
-    http://fedora-mirror02.rbc.ru/pub/fedora-secondary/releases/17/Everything/arm/os
-    http://fr2.rpmfind.net/linux/fedora-secondary/releases/17/Everything/arm/os
-    http://ftp.df.lth.se/pub/fedora-secondary/releases/17/Everything/arm/os
+    http://archive.eu.kernel.org/fedora-secondary/releases/${version}/Everything/arm/os
+    http://mirror.proserve.nl/fedora-secondary/releases/${version}/Everything/arm/os
+    http://ftp.cc.uoc.gr/mirrors/linux/fedora-secondary/releases/${version}/Everything/arm/os
+    http://archive.nl.eu.kernel.org/fedora-secondary/releases/${version}/Everything/arm/os
+    http://fedora-mirror02.rbc.ru/pub/fedora-secondary/releases/${version}/Everything/arm/os
+    http://fr2.rpmfind.net/linux/fedora-secondary/releases/${version}/Everything/arm/os
+    http://ftp.df.lth.se/pub/fedora-secondary/releases/${version}/Everything/arm/os
 enabled=1
 gpgcheck=0
 
@@ -189,14 +191,14 @@ gpgcheck=0
 name=rpi-updates
 failovermethod=priority
 baseurl=
-    http://fedora-mirror02.rbc.ru/pub/fedora-secondary/updates/17/arm
-    http://mirror.kiewel-online.ch/secondary/updates/17/arm
-    http://archive.nl.eu.kernel.org/fedora-secondary/updates/17/arm
-    http://ftp.heanet.ie/mirrors/fedora-secondary/updates/17/arm
-    http://mirror.proserve.nl/fedora-secondary/updates/17/arm
-    http://fr2.rpmfind.net/linux/fedora-secondary/updates/17/arm
-    http://ftp.df.lth.se/pub/fedora-secondary/updates/17/arm
-    http://archive.eu.kernel.org/fedora-secondary/updates/17/arm
+    http://fedora-mirror02.rbc.ru/pub/fedora-secondary/updates/${version}/arm
+    http://mirror.kiewel-online.ch/secondary/updates/${version}/arm
+    http://archive.nl.eu.kernel.org/fedora-secondary/updates/${version}/arm
+    http://ftp.heanet.ie/mirrors/fedora-secondary/updates/${version}/arm
+    http://mirror.proserve.nl/fedora-secondary/updates/${version}/arm
+    http://fr2.rpmfind.net/linux/fedora-secondary/updates/${version}/arm
+    http://ftp.df.lth.se/pub/fedora-secondary/updates/${version}/arm
+    http://archive.eu.kernel.org/fedora-secondary/updates/${version}/arm
 enabled=1
 gpgcheck=0
 
