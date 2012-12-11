@@ -131,6 +131,7 @@ install_sd_rootfsdir() {
         denix-sounds \
         denix-icons \
         denix-skel \
+        net-tools \
         @base \
         @core \
         @fonts \
