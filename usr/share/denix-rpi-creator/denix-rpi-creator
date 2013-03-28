@@ -219,6 +219,10 @@ LABEL="rootfs"          /                       ext4    defaults,noatime        
 LABEL="boot"            /boot                   vfat    noauto,comment=systemd.automount 1 2
 EOF
 
+    # /etc/fedora-release
+    ln -s redhat-release ${sd_rootfsdir}/etc/fedora-release
+    echo "Denix release 18 (Spherical Cow)" > ${sd_rootfsdir}/etc/fedora-release
+
     # /etc/hosts
     cat > ${sd_rootfsdir}/etc/hosts << EOF
 127.0.0.1       localhost localhost.localdomain ${rpi_hostname}
@@ -269,9 +273,6 @@ EOF
 
     # Set hostname
     echo "${rpi_hostname}" > ${sd_rootfsdir}/etc/hostname
-
-    # Create release file
-    echo "Denix release 18 (Spherical Cow)" > ${sd_rootfsdir}/etc/denix-release
 
     # Add issue message
     cat > ${sd_rootfsdir}/etc/issue << EOF_ISSUE

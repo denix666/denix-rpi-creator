@@ -1,6 +1,6 @@
 Name:		denix-rpi-creator
 Version:	1.0
-Release:	7%{?dist}
+Release:	8%{?dist}
 Summary:	Raspberry Pi sd image creator
 Group:		Scripts
 License:	GPL
