@@ -78,7 +78,7 @@ install_sd_rootfsdir() {
     # Install packages into image
     ##########################################################################
     yum clean all
-    yum install -y --skip-broken \
+    yum install -y \
 	--disablerepo=\* \
 	--enablerepo=rpi-remix \
 	--enablerepo=rpi-fedora \
@@ -93,19 +93,7 @@ install_sd_rootfsdir() {
         -x kernel \
         -x firstboot \
         -x raspberrypi-firstboot-mod \
-        -x xorg-x11-drv-ati \
-        -x xorg-x11-drv-cirrus \
-        -x xorg-x11-drv-geode \
-        -x xorg-x11-drv-intel \
-        -x xorg-x11-drv-mga \
-        -x xorg-x11-drv-nouveau \
-        -x xorg-x11-drv-omap \
-        -x xorg-x11-drv-qxl \
-        -x xorg-x11-drv-vesa \
-        -x xorg-x11-drv-vmware \
-        -x xorg-x11-server-Xorg \
-        -x xorg-x11-xauth \
-        -x xorg-x11-xinit \
+        -x xorg-x11* \
         -x smolt \
         -x smolt-firstboot \
         -x kernel-kirkwood \
@@ -129,7 +117,6 @@ install_sd_rootfsdir() {
         raspberrypi-release \
         raspberrypi-vc-firmware \
         raspberrypi-release-notes \
-        raspberrypi-rootfs-resize \
         raspberrypi-kernel \
         raspberrypi-config \
         raspberrypi-vc-static \
@@ -151,7 +138,11 @@ install_sd_rootfsdir() {
         libimobiledevice \
         iso-codes \
         alsa-utils \
-        git
+        git \
+        tcptrack \
+        lsof \
+        bind-utils \
+        iftop
     $color_Off
 
     if ! [ -e ${sd_rootfsdir}/etc ]; then
@@ -251,13 +242,36 @@ for i in fedora-storage-init-late.service fedora-storage-init.service plymouth-h
 
         do systemctl mask \$i
         done
-
-# start sm-client
-systemctl enable sm-client.service
 EOF
     chmod 0755 ${sd_rootfsdir}/tmp/optimize-systemd
     chroot ${sd_rootfsdir} /tmp/optimize-systemd
     rm -f ${sd_rootfsdir}/tmp/optimize-systemd
+
+    # Add script to resize partition at first boot
+    cat > ${sd_rootfsdir}/etc/rc.d/init.d/resizefs << EOF_RESIZEFS
+#!/bin/bash
+#
+# live: Init script for resizefs
+#
+# chkconfig: 345 00 99
+# description: Init script for resizefs
+
+if [ -f /.rootfs-repartition ]; then
+    echo "Changing the root partition size"
+    echo -e "d\n2\nn\np\n2\n\n\np\nw\n" | fdisk /dev/mmcblk0 >/dev/null 2>&1
+    echo "Repartition done, rebooting for next phase of resize."
+    touch /.rootfs-resize
+    rm -f /.rootfs-repartition
+    reboot
+else
+    if [ -f /.rootfs-resize ]; then
+	echo "Resizing the root partition"
+	ionice -n 7 resize2fs -p /dev/mmcblk0p2
+    fi
+fi
+EOF_RESIZEFS
+    chmod 755 ${sd_rootfsdir}/etc/rc.d/init.d/resizefs
+    chroot ${sd_rootfsdir} /sbin/chkconfig --add resizefs
 
     # hostname
     cat > ${sd_rootfsdir}/etc/sysconfig/network << EOF
@@ -272,6 +286,12 @@ DEVICE=eth0
 BOOTPROTO=dhcp
 ONBOOT=yes
 NM_CONTROLLED=yes
+EOF
+
+    # Disable ipv6
+    cat >> ${sd_rootfsdir}/etc/sysctl.conf << EOF
+net.ipv6.conf.all.disable_ipv6=1
+net.ipv6.conf.default.disable_ipv6=1
 EOF
 
     # Set hostname
