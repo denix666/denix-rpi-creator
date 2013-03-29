@@ -72,13 +72,13 @@ EOF
 install_sd_rootfsdir() {
     $color_Purple
     rm -rf ${sd_rootfsdir}
-    install -d ${sd_rootfsdir}/var
+    install -d ${sd_rootfsdir}/{var,run}
     ln -s ../run ${sd_rootfsdir}/var/run
 
     # Install packages into image
     ##########################################################################
     yum clean all
-    yum install -y \
+    yum install -y --skip-broken \
 	--disablerepo=\* \
 	--enablerepo=rpi-remix \
 	--enablerepo=rpi-fedora \
@@ -92,6 +92,7 @@ install_sd_rootfsdir() {
         -x system-config-date \
         -x kernel \
         -x firstboot \
+        -x raspberrypi-firstboot-mod \
         -x xorg-x11-drv-ati \
         -x xorg-x11-drv-cirrus \
         -x xorg-x11-drv-geode \
@@ -125,15 +126,12 @@ install_sd_rootfsdir() {
         nc \
         NetworkManager \
         system-config-network \
-        raspberrypi-fedora-remix-logos \
         raspberrypi-release \
         raspberrypi-vc-firmware \
         raspberrypi-release-notes \
         raspberrypi-rootfs-resize \
         raspberrypi-kernel \
-        raspberrypi-system-config-date \
         raspberrypi-config \
-        raspberrypi-firstboot \
         raspberrypi-vc-static \
         denix-bash \
         denix-colors \
@@ -155,6 +153,11 @@ install_sd_rootfsdir() {
         alsa-utils \
         git
     $color_Off
+
+    if ! [ -e ${sd_rootfsdir}/etc ]; then
+	echo "error"
+	exit 1
+    fi
 }
 
 post_installation() {
