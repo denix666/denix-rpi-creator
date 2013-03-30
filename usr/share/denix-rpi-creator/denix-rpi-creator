@@ -267,6 +267,7 @@ else
     if [ -f /.rootfs-resize ]; then
 	echo "Resizing the root partition"
 	ionice -n 7 resize2fs -p /dev/mmcblk0p2
+	rm -f /.rootfs-resize
     fi
 fi
 EOF_RESIZEFS
