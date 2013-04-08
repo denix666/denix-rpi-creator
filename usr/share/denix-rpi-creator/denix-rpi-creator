@@ -13,7 +13,7 @@
 # GNU General Public License for more details.
 #
 
-IMGSIZE=1800
+IMGSIZE=1200
 image=/root/rpi-01.img
 fsdir=${image}p2
 sd_rootfsdir=/root/sd_rootfsdir
@@ -142,7 +142,8 @@ install_sd_rootfsdir() {
         tcptrack \
         lsof \
         bind-utils \
-        iftop
+        iftop \
+        tar
     $color_Off
 
     if ! [ -e ${sd_rootfsdir}/etc ]; then
@@ -293,6 +294,7 @@ DEVICE=eth0
 BOOTPROTO=dhcp
 ONBOOT=yes
 NM_CONTROLLED=yes
+DNS1=8.8.8.8
 EOF
 
     # Disable ipv6
