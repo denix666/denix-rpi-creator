@@ -143,7 +143,8 @@ install_sd_rootfsdir() {
         lsof \
         bind-utils \
         iftop \
-        tar
+        tar \
+        which
     $color_Off
 
     if ! [ -e ${sd_rootfsdir}/etc ]; then
