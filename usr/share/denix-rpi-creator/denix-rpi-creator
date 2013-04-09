@@ -144,7 +144,9 @@ install_sd_rootfsdir() {
         bind-utils \
         iftop \
         tar \
-        which
+        which \
+        lftp \
+        file
     $color_Off
 
     if ! [ -e ${sd_rootfsdir}/etc ]; then
@@ -363,6 +365,10 @@ EOF
     # Edit login.defs
     sed -i 's/^UID_MIN.*$/UID_MIN			1000/g' ${sd_rootfsdir}/etc/login.defs
     sed -i 's/^GID_MIN.*$/GID_MIN			1000/g' ${sd_rootfsdir}/etc/login.defs
+
+    # Set 32Mb for GPU
+    echo "gpu_mem=32" > ${sd_rootfsdir}/boot/config.txt
+
     $color_Off
 }
 
