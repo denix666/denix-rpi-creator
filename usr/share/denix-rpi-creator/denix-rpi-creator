@@ -13,13 +13,15 @@
 # GNU General Public License for more details.
 #
 
+# Set system vars
+#################
 IMGSIZE=1200
-image=/root/rpi-01.img
-fsdir=${image}p2
-sd_rootfsdir=/root/sd_rootfsdir
 version="18"
+dest_arch="armv6l"
 rpi_hostname="denix.rpi"
-
+sd_rootfsdir="/srv/denix-rpi/sd_rootfsdir"
+image="/srv/denix-rpi/denix-${version}-${dest_arch}.img"
+fsdir=${image}p2
 
 [ -f /etc/denix-colors ] && . /etc/denix-colors
 
@@ -28,6 +30,15 @@ rpi_hostname="denix.rpi"
 if ! [ "$(whoami)" = "root" ]; then
     $color_Red
     echo "You have to run me with root user priveleges!"
+    $color_Off
+    exit 1
+fi
+
+# Check if script runs on arm architecture
+if ! [ "$(uname -m)" = "${dest_arch}" ]; then
+    $color_Red
+    echo "Please execute this script only on ${dest_arch} platform!"
+    echo "Exiting..."
     $color_Off
     exit 1
 fi
@@ -61,9 +72,9 @@ gpgcheck=0
 name=Denix X repo
 failovermethod=priority
 baseurl=
-    http://mirror.os.vc/denix-repo/yum/base/x1/arm
-    http://fedora.os.vc/yum/base/x1/arm
-    http://web.macam.ac.il/~denix/fedora/yum/base/x1/arm
+    http://mirror.os.vc/denix-repo/yum/base/${version}/arm
+    http://fedora.os.vc/yum/base/${version}/arm
+    http://web.macam.ac.il/~denix/fedora/yum/base/${version}/arm
 enabled=0
 gpgcheck=0
 EOF
@@ -150,7 +161,10 @@ install_sd_rootfsdir() {
     $color_Off
 
     if ! [ -e ${sd_rootfsdir}/etc ]; then
-	echo "error"
+	$color_Red
+	echo "Error! Something wrong! Please check internet connection and try again!"
+	echo "Exiting..."
+	$color_Off
 	exit 1
     fi
 }
@@ -204,9 +218,9 @@ gpgcheck=0
 name=Denix X repo
 failovermethod=priority
 baseurl=
-    http://mirror.os.vc/denix-repo/yum/base/x1/arm
-    http://fedora.os.vc/yum/base/x1/arm
-    http://web.macam.ac.il/~denix/fedora/yum/base/x1/arm
+    http://mirror.os.vc/denix-repo/yum/base/${version}/arm
+    http://fedora.os.vc/yum/base/${version}/arm
+    http://web.macam.ac.il/~denix/fedora/yum/base/${version}/arm
 enabled=1
 gpgcheck=0
 EOF
@@ -234,6 +248,7 @@ EOF
     chroot ${sd_rootfsdir} systemctl enable firewalld.service
 
     # password for root (password=raspberrypi)
+    echo "Setting root password: raspberrypi"
     sed -i 's|root:.*:|root:$6$KW0GGbE5$zlEB9.PbHVh8kmXj1WMFGLJGwwthhU4oXn2oNxHZllbUSzTsVhTZ9jts8RC7uicuUCWyrsZ1e2yEj4ErDLOHQ/:15525:0:99999:7:::|' ${sd_rootfsdir}/etc/shadow
 
     # Disable SELINUX
@@ -301,6 +316,7 @@ DNS1=8.8.8.8
 EOF
 
     # Disable ipv6
+    echo "Disabling ipv6..."
     cat >> ${sd_rootfsdir}/etc/sysctl.conf << EOF
 net.ipv6.conf.all.disable_ipv6=1
 net.ipv6.conf.default.disable_ipv6=1
@@ -363,10 +379,12 @@ EOF
     echo "unicode_start" > ${sd_rootfsdir}/etc/profile.d/unicode.sh
 
     # Edit login.defs
+    echo "Setting login.defs..."
     sed -i 's/^UID_MIN.*$/UID_MIN			1000/g' ${sd_rootfsdir}/etc/login.defs
     sed -i 's/^GID_MIN.*$/GID_MIN			1000/g' ${sd_rootfsdir}/etc/login.defs
 
     # Set 32Mb for GPU
+    echo "Optimizing memory..."
     echo "gpu_mem=32" > ${sd_rootfsdir}/boot/config.txt
 
     $color_Off
@@ -452,8 +470,12 @@ close_image() {
     # Print message
     $color_Yellow
     echo
-    echo "Your image is ready! Write it to SD card with this command:"
-    echo "dd if=rpi-01.img of=/dev/xxx bs=1M"
+    echo "Your image is ready and can be found in: ${image}"
+    echo "Write it to SD card with this command:"
+    echo "dd if=denix-${version}-${dest_arch}.img of=/dev/xxx bs=1M"
+    echo
+    echo "The first boot takes a long time because of resizing, repartitioning and making swap file"
+    echo "Have a nice usage!"
     echo
     $color_Off
 }
