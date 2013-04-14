@@ -68,8 +68,8 @@ mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f${v
 enabled=0
 gpgcheck=0
 
-[denix-x]
-name=Denix X repo
+[denix]
+name=Denix repo
 failovermethod=priority
 baseurl=
     http://mirror.os.vc/denix-repo/yum/base/${version}/arm
@@ -137,6 +137,7 @@ install_sd_rootfsdir() {
         denix-umask \
         denix-sounds \
         denix-skel \
+        kpartx \
         net-tools \
         @base \
         @core \
@@ -214,8 +215,8 @@ baseurl=
 enabled=1
 gpgcheck=0
 
-[denix-x]
-name=Denix X repo
+[denix]
+name=Denix repo
 failovermethod=priority
 baseurl=
     http://mirror.os.vc/denix-repo/yum/base/${version}/arm
@@ -465,19 +466,27 @@ close_image() {
     rmdir  ${image}p2
 
     # Delete image devmappings
-    kpartx -dv $image
-    
+    kpartx -dv $image && LAST_ERR=0 || LAST_ERR=1
+
     # Print message
-    $color_Yellow
-    echo
-    echo "Your image is ready and can be found in: ${image}"
-    echo "Write it to SD card with this command:"
-    echo "dd if=denix-${version}-${dest_arch}.img of=/dev/xxx bs=1M"
-    echo
-    echo "The first boot takes a long time because of resizing, repartitioning and making swap file"
-    echo "Have a nice usage!"
-    echo
-    $color_Off
+    if [ "${LAST_ERR}"="0" ]; then
+	$color_Yellow
+	echo
+	echo "Your image is ready and can be found in: ${image}"
+	echo "Write it to SD card with this command:"
+	echo "dd if=denix-${version}-${dest_arch}.img of=/dev/xxx bs=1M"
+	echo
+	echo "The first boot takes a long time because of resizing, repartitioning and making swap file"
+	echo "Have a nice usage!"
+	echo
+    else
+	$color_Red
+	echo
+	echo "Errors found!"
+	echo "Exiting..."
+	$color_Off
+	exit 1
+    fi
 }
 
 show_help() {
