@@ -35,6 +35,7 @@ if ! [ "$(whoami)" = "root" ]; then
 fi
 
 # Check if script runs on arm architecture
+##########################################
 if ! [ "$(uname -m)" = "${dest_arch}" ]; then
     $color_Red
     echo "Please execute this script only on ${dest_arch} platform!"
@@ -44,6 +45,16 @@ if ! [ "$(uname -m)" = "${dest_arch}" ]; then
 fi
 
 add_repos() {
+    $color_BYellow
+    echo
+    echo "######################################################################"
+    echo "#                                                                    #"
+    echo "# Addind repos to system                                             #"
+    echo "#                                                                    #"
+    echo "######################################################################"
+    echo
+    $color_Off
+    
     # Add repos to system
     ##########################################################################
     cat > /etc/yum.repos.d/raspberry.repo << EOF
@@ -81,13 +92,28 @@ EOF
 }
 
 install_sd_rootfsdir() {
-    $color_Purple
+    $color_BYellow
+    echo
+    echo "######################################################################"
+    echo "#                                                                    #"
+    echo "# Preparing and installing rootfs dir                                #"
+    echo "#                                                                    #"
+    echo "######################################################################"
+    echo
+    $color_Off
+    
+    # Cleanup old rootfsdir
+    #######################
     rm -rf ${sd_rootfsdir}
+    
+    # Prepare new rootfsdir
+    #######################
     install -d ${sd_rootfsdir}/{var,run}
     ln -s ../run ${sd_rootfsdir}/var/run
 
-    # Install packages into image
+    # Install packages into new rootfsdir
     ##########################################################################
+    $color_Purple
     yum clean all
     yum install -y \
 	--disablerepo=\* \
@@ -171,8 +197,19 @@ install_sd_rootfsdir() {
 }
 
 post_installation() {
-    $color_White
+    $color_BYellow
+    echo
+    echo "######################################################################"
+    echo "#                                                                    #"
+    echo "# Post installation proccess                                         #"
+    echo "#                                                                    #"
+    echo "######################################################################"
+    echo
+    $color_Off
+    
     # Post installation
+    ###################
+    $color_White
     cat > ${sd_rootfsdir}/etc/resolv.conf << EOF
 nameserver 8.8.8.8
 EOF
@@ -392,37 +429,56 @@ EOF
 }
 
 prepare_image() {
+    $color_BYellow
+    echo
+    echo "######################################################################"
+    echo "#                                                                    #"
+    echo "# Prepare image file                                                 #"
+    echo "#                                                                    #"
+    echo "######################################################################"
+    echo
+    $color_Off
+
+    # Delete ol image file
+    ######################
     $color_White
     rm -rf ${image}
 
     # Create image file, partition it
+    #################################
     dd if=/dev/zero of=${image} bs=1M count=${IMGSIZE}
     echo -e "n\np\n1\n\n+51M\nn\np\n2\n\n\nt\n1\nc\na\n1\np\nw\n" | fdisk ${image}
 
     # Create image devmappings
+    ##########################
     kpartx -av ${image}
 
     # Get partitions and make them accessible via loopback+dm
+    #########################################################
     losetup -a
     loopback=$( losetup -a | grep "$image" | cut -d":" -f1 | xargs -I {} basename {} )
 
     # Create filesystems
+    ####################
     mkfs -t vfat -n boot   /dev/mapper/${loopback}p1
     mkfs -t ext4 -L rootfs /dev/mapper/${loopback}p2
 
     # Mount filesystems
+    ###################
     mkdir -p ${fsdir}
     mount -o rw /dev/mapper/${loopback}p2 ${fsdir}
     mkdir -p ${fsdir}/boot
     mount -o rw /dev/mapper/${loopback}p1 ${fsdir}/boot
 
     # Bind-mount system/kernel filesystems
+    ######################################
     mkdir -p ${fsdir}/{proc,dev,sys}
     mknod ${fsdir}/dev/console c 5 1
     mknod ${fsdir}/dev/null c 1 3
     mknod ${fsdir}/dev/zero c 1 5
 
     # Create repart label
+    #####################
     touch ${fsdir}/.rootfs-repartition
 
     $color_Off
@@ -430,7 +486,18 @@ prepare_image() {
 }
 
 copy_all() {
+    $color_BYellow
+    echo
+    echo "######################################################################"
+    echo "#                                                                    #"
+    echo "# Copying rootfsdir to image                                         #"
+    echo "#                                                                    #"
+    echo "######################################################################"
+    echo
+    $color_Off
+
     # Copy sd rootfs to image
+    #########################
     $color_Cyan
     echo "Copying boot..."
     cp -rp ${sd_rootfsdir}/boot/* ${fsdir}/boot
@@ -444,6 +511,18 @@ copy_all() {
 
 
 reinstall_rootfs() {
+    $color_BYellow
+    echo
+    echo "######################################################################"
+    echo "#                                                                    #"
+    echo "# Reinstalling rootfs                                                #"
+    echo "#                                                                    #"
+    echo "######################################################################"
+    echo
+    $color_Off
+    
+    # Reinstall rootfs
+    ##################
     cat << EOF >${sd_rootfsdir}/tmp/reinstall
 #!/bin/bash
 echo "Reinstalling within chroot."
@@ -459,16 +538,29 @@ EOF
 }
 
 close_image() {
-    $color_White
+    $color_BYellow
+    echo
+    echo "######################################################################"
+    echo "#                                                                    #"
+    echo "# Closing image                                                      #"
+    echo "#                                                                    #"
+    echo "######################################################################"
+    echo
+    $color_Off
+
     # Unmount filesystems
+    #####################
+    $color_White
     umount ${image}p2/boot
     umount ${image}p2
     rmdir  ${image}p2
 
     # Delete image devmappings
+    ##########################
     kpartx -dv $image && LAST_ERR=0 || LAST_ERR=1
 
     # Print message
+    ###############
     if [ "${LAST_ERR}"="0" ]; then
 	$color_Yellow
 	echo
