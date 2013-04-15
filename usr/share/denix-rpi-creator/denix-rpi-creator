@@ -19,8 +19,9 @@ IMGSIZE=1200
 version="18"
 dest_arch="armv6l"
 rpi_hostname="denix.rpi"
-sd_rootfsdir="/srv/denix-rpi/sd_rootfsdir"
-image="/srv/denix-rpi/denix-${version}-${dest_arch}.img"
+work_dir="/srv/denix-rpi"
+sd_rootfsdir="${work_dir}/sd_rootfsdir"
+image="${work_dir}/denix-${version}-${dest_arch}.img"
 fsdir=${image}p2
 
 [ -f /etc/denix-colors ] && . /etc/denix-colors
@@ -164,6 +165,7 @@ install_sd_rootfsdir() {
         denix-sounds \
         denix-skel \
         kpartx \
+        dosfstools \
         net-tools \
         @base \
         @core \
@@ -433,38 +435,60 @@ prepare_image() {
     echo
     echo "######################################################################"
     echo "#                                                                    #"
-    echo "# Prepare image file                                                 #"
+    echo "# Preparing image file                                               #"
     echo "#                                                                    #"
     echo "######################################################################"
     echo
     $color_Off
 
-    # Delete ol image file
+    # Delete old image file
     ######################
-    $color_White
+    install -d ${work_dir}
     rm -rf ${image}
 
     # Create image file, partition it
     #################################
+    $color_BYellow
+    echo "Creating image file..."
+    $color_Off
     dd if=/dev/zero of=${image} bs=1M count=${IMGSIZE}
+    $color_BYellow
+    echo "Creating partitions..."
+    $color_Off
     echo -e "n\np\n1\n\n+51M\nn\np\n2\n\n\nt\n1\nc\na\n1\np\nw\n" | fdisk ${image}
+    sleep 2
 
     # Create image devmappings
     ##########################
+    $color_BYellow
+    echo "Creating device mappings..."
+    $color_Off
     kpartx -av ${image}
+    sleep 2
 
     # Get partitions and make them accessible via loopback+dm
     #########################################################
     losetup -a
-    loopback=$( losetup -a | grep "$image" | cut -d":" -f1 | xargs -I {} basename {} )
+    loopback=$( losetup -a | grep "${image}" | cut -d":" -f1 | xargs -I {} basename {} )
 
     # Create filesystems
     ####################
+    $color_BYellow
+    echo "Formatting boot partition..."
+    $color_Off
     mkfs -t vfat -n boot   /dev/mapper/${loopback}p1
+    sleep 1
+
+    $color_BYellow
+    echo "Formatting root partition..."
+    $color_Off
     mkfs -t ext4 -L rootfs /dev/mapper/${loopback}p2
 
     # Mount filesystems
     ###################
+    $color_BYellow
+    echo "Mounting partitions..."
+    $color_Off
     mkdir -p ${fsdir}
     mount -o rw /dev/mapper/${loopback}p2 ${fsdir}
     mkdir -p ${fsdir}/boot
@@ -550,13 +574,18 @@ close_image() {
 
     # Unmount filesystems
     #####################
-    $color_White
+    $color_BYellow
+    echo "Unmounting partitions..."
+    $color_Off
     umount ${image}p2/boot
     umount ${image}p2
     rmdir  ${image}p2
 
     # Delete image devmappings
     ##########################
+    $color_BYellow
+    echo "Deleting device mappings..."
+    $color_Off
     kpartx -dv $image && LAST_ERR=0 || LAST_ERR=1
 
     # Print message
@@ -568,7 +597,7 @@ close_image() {
 	echo "Write it to SD card with this command:"
 	echo "dd if=denix-${version}-${dest_arch}.img of=/dev/xxx bs=1M"
 	echo
-	echo "The first boot takes a long time because of resizing, repartitioning and making swap file"
+	echo "The first boot takes a long time because of resizing, repartitioning and making swap file."
 	echo "Have a nice usage!"
 	echo
     else
