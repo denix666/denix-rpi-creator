@@ -182,6 +182,7 @@ install_sd_rootfsdir() {
         tcptrack \
         lsof \
         bind-utils \
+        coreutils \
         iftop \
         tar \
         which \
