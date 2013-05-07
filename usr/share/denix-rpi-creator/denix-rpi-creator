@@ -218,53 +218,7 @@ nameserver 8.8.8.8
 EOF
 
     rm -rf ${sd_rootfsdir}/etc/yum.repos.d/*
-    cat > ${sd_rootfsdir}/etc/yum.repos.d/raspberrypi.repo << EOF
-[rpi-remix]
-name=rpi-remix
-failovermethod=priority
-baseurl=http://scotland.proximity.on.ca/~agreene/raspberrypi/raspberrypi-fedora-remix/${version}/packages/arm/os/
-enabled=1
-gpgcheck=0
-
-[rpi-fedora]
-name=Fedora
-failovermethod=priority
-baseurl=
-    http://archive.eu.kernel.org/fedora-secondary/releases/${version}/Everything/arm/os
-    http://mirror.proserve.nl/fedora-secondary/releases/${version}/Everything/arm/os
-    http://ftp.cc.uoc.gr/mirrors/linux/fedora-secondary/releases/${version}/Everything/arm/os
-    http://archive.nl.eu.kernel.org/fedora-secondary/releases/${version}/Everything/arm/os
-    http://fedora-mirror02.rbc.ru/pub/fedora-secondary/releases/${version}/Everything/arm/os
-    http://fr2.rpmfind.net/linux/fedora-secondary/releases/${version}/Everything/arm/os
-    http://ftp.df.lth.se/pub/fedora-secondary/releases/${version}/Everything/arm/os
-enabled=1
-gpgcheck=0
-
-[rpi-fedora-updates]
-name=rpi-updates
-failovermethod=priority
-baseurl=
-    http://fedora-mirror02.rbc.ru/pub/fedora-secondary/updates/${version}/arm
-    http://mirror.kiewel-online.ch/secondary/updates/${version}/arm
-    http://archive.nl.eu.kernel.org/fedora-secondary/updates/${version}/arm
-    http://ftp.heanet.ie/mirrors/fedora-secondary/updates/${version}/arm
-    http://mirror.proserve.nl/fedora-secondary/updates/${version}/arm
-    http://fr2.rpmfind.net/linux/fedora-secondary/updates/${version}/arm
-    http://ftp.df.lth.se/pub/fedora-secondary/updates/${version}/arm
-    http://archive.eu.kernel.org/fedora-secondary/updates/${version}/arm
-enabled=1
-gpgcheck=0
-
-[denix]
-name=Denix repo
-failovermethod=priority
-baseurl=
-    http://mirror.os.vc/denix-repo/yum/base/${version}/arm
-    http://fedora.os.vc/yum/base/${version}/arm
-    http://web.macam.ac.il/~denix/fedora/yum/base/${version}/arm
-enabled=1
-gpgcheck=0
-EOF
+    cp /etc/yum.repos.d/raspberry.repo ${sd_rootfsdir}/etc/yum.repos.d/raspberry.repo
 
     # /etc/fstab
     cat > ${sd_rootfsdir}/etc/fstab << EOF
