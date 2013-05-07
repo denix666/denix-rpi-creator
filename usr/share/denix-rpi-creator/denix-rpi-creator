@@ -58,29 +58,44 @@ add_repos() {
     
     # Add repos to system
     ##########################################################################
-    cat > /etc/yum.repos.d/raspberry.repo << EOF
-[rpi-remix]
+    cat > /etc/yum.repos.d/inst-rpi.repo << EOF
+[inst-rpi-remix]
 name=rpi-remix
 failovermethod=priority
 baseurl=http://scotland.proximity.on.ca/~agreene/raspberrypi/raspberrypi-fedora-remix/${version}/packages/arm/os/
 enabled=0
 gpgcheck=0
 
-[rpi-fedora]
+[inst-rpi-fedora]
 name=Fedora
 failovermethod=priority
-mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=fedora-${version}&arch=arm
+baseurl=
+    http://archive.eu.kernel.org/fedora-secondary/releases/${version}/Everything/arm/os
+    http://mirror.proserve.nl/fedora-secondary/releases/${version}/Everything/arm/os
+    http://ftp.cc.uoc.gr/mirrors/linux/fedora-secondary/releases/${version}/Everything/arm/os
+    http://archive.nl.eu.kernel.org/fedora-secondary/releases/${version}/Everything/arm/os
+    http://fedora-mirror02.rbc.ru/pub/fedora-secondary/releases/${version}/Everything/arm/os
+    http://fr2.rpmfind.net/linux/fedora-secondary/releases/${version}/Everything/arm/os
+    http://ftp.df.lth.se/pub/fedora-secondary/releases/${version}/Everything/arm/os
 enabled=0
 gpgcheck=0
 
-[rpi-fedora-updates]
+[inst-rpi-fedora-updates]
 name=rpi-updates
 failovermethod=priority
-mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f${version}&arch=arm
+baseurl=
+    http://fedora-mirror02.rbc.ru/pub/fedora-secondary/updates/${version}/arm
+    http://mirror.kiewel-online.ch/secondary/updates/${version}/arm
+    http://archive.nl.eu.kernel.org/fedora-secondary/updates/${version}/arm
+    http://ftp.heanet.ie/mirrors/fedora-secondary/updates/${version}/arm
+    http://mirror.proserve.nl/fedora-secondary/updates/${version}/arm
+    http://fr2.rpmfind.net/linux/fedora-secondary/updates/${version}/arm
+    http://ftp.df.lth.se/pub/fedora-secondary/updates/${version}/arm
+    http://archive.eu.kernel.org/fedora-secondary/updates/${version}/arm
 enabled=0
 gpgcheck=0
 
-[denix]
+[inst-denix]
 name=Denix repo
 failovermethod=priority
 baseurl=
@@ -118,10 +133,10 @@ install_sd_rootfsdir() {
     yum clean all
     yum install -y \
 	--disablerepo=\* \
-	--enablerepo=rpi-remix \
-	--enablerepo=rpi-fedora \
-	--enablerepo=rpi-fedora-updates \
-	--enablerepo=denix-x \
+	--enablerepo=inst-rpi-remix \
+	--enablerepo=inst-rpi-fedora \
+	--enablerepo=inst-rpi-fedora-updates \
+	--enablerepo=inst-denix \
 	--installroot="$sd_rootfsdir" \
         -x fedora-release \
         -x fedora-release-notes \
@@ -218,7 +233,38 @@ nameserver 8.8.8.8
 EOF
 
     rm -rf ${sd_rootfsdir}/etc/yum.repos.d/*
-    cp /etc/yum.repos.d/raspberry.repo ${sd_rootfsdir}/etc/yum.repos.d/raspberry.repo
+    cat > ${sd_rootfsdir}/etc/yum.repos.d/raspberry.repo << EOF
+[rpi-remix]
+name=rpi-remix
+failovermethod=priority
+baseurl=http://scotland.proximity.on.ca/~agreene/raspberrypi/raspberrypi-fedora-remix/${version}/packages/arm/os/
+enabled=1
+gpgcheck=0
+
+[rpi-fedora]
+name=Fedora
+failovermethod=priority
+mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=fedora-${version}&arch=arm
+enabled=1
+gpgcheck=0
+
+[rpi-fedora-updates]
+name=rpi-updates
+failovermethod=priority
+mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f${version}&arch=arm
+enabled=1
+gpgcheck=0
+
+[denix]
+name=Denix repo
+failovermethod=priority
+baseurl=
+    http://mirror.os.vc/denix-repo/yum/base/${version}/arm
+    http://fedora.os.vc/yum/base/${version}/arm
+    http://web.macam.ac.il/~denix/fedora/yum/base/${version}/arm
+enabled=1
+gpgcheck=0
+EOF
 
     # /etc/fstab
     cat > ${sd_rootfsdir}/etc/fstab << EOF
