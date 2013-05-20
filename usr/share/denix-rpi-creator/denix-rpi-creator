@@ -201,7 +201,11 @@ install_sd_rootfsdir() {
         iftop \
         tar \
         which \
+        minicom \
+        screen \
         lftp \
+        tree \
+        setserial \
         file
     $color_Off
 
@@ -287,6 +291,9 @@ EOF
     chroot ${sd_rootfsdir} systemctl enable nortc.service
     chroot ${sd_rootfsdir} systemctl enable ntpdate.service
     chroot ${sd_rootfsdir} systemctl enable firewalld.service
+    chroot ${sd_rootfsdir} systemctl start getty@ttyAMA0
+    chroot ${sd_rootfsdir} systemctl enable getty@ttyAMA0
+    chroot ${sd_rootfsdir} ln -s /usr/lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@ttyAMA0.service
 
     # password for root (password=raspberrypi)
     echo "Setting root password: raspberrypi"
@@ -427,6 +434,9 @@ EOF
     # Set 32Mb for GPU
     echo "Optimizing memory..."
     echo "gpu_mem=32" > ${sd_rootfsdir}/boot/config.txt
+
+    # Change serial speed
+    sed -i 's/^.*ExecStart=.*$/ExecStart=-\/sbin\/agetty --noclear %I 115200 linux/g' ${sd_rootfsdir}/usr/lib/systemd/system/getty@.service
 
     $color_Off
 }
