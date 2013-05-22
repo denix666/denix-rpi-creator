@@ -206,6 +206,7 @@ install_sd_rootfsdir() {
         lftp \
         tree \
         setserial \
+        python-rpi-gpio \
         file
     $color_Off
 
