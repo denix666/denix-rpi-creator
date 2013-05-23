@@ -168,11 +168,9 @@ install_sd_rootfsdir() {
         NetworkManager \
         system-config-network \
         raspberrypi-release \
-        raspberrypi-vc-firmware \
+        raspberrypi-firmware \
         raspberrypi-release-notes \
         raspberrypi-kernel \
-        raspberrypi-config \
-        raspberrypi-vc-static \
         denix-bash \
         denix-colors \
         denix-prompt \
@@ -207,6 +205,8 @@ install_sd_rootfsdir() {
         tree \
         setserial \
         python-rpi-gpio \
+        wiringpi \
+        libbcm2835 \
         file
     $color_Off
 
