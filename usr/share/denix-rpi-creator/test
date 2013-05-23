@@ -59,39 +59,24 @@ add_repos() {
     # Add repos to system
     ##########################################################################
     cat > /etc/yum.repos.d/inst-rpi.repo << EOF
-[inst-rpi-remix]
-name=rpi-remix
+[inst-pidora-rpfr]
+name=inst-pidora-rpfr
 failovermethod=priority
-baseurl=http://scotland.proximity.on.ca/~agreene/raspberrypi/raspberrypi-fedora-remix/${version}/packages/arm/os/
+baseurl=http://pidora.proximity.on.ca/pidora/releases/${version}/packages/armv6hl/os
 enabled=0
 gpgcheck=0
 
-[inst-rpi-fedora]
-name=Fedora
+[inst-pidora]
+name=inst-pidora
 failovermethod=priority
-baseurl=
-    http://archive.eu.kernel.org/fedora-secondary/releases/${version}/Everything/arm/os
-    http://mirror.proserve.nl/fedora-secondary/releases/${version}/Everything/arm/os
-    http://ftp.cc.uoc.gr/mirrors/linux/fedora-secondary/releases/${version}/Everything/arm/os
-    http://archive.nl.eu.kernel.org/fedora-secondary/releases/${version}/Everything/arm/os
-    http://fedora-mirror02.rbc.ru/pub/fedora-secondary/releases/${version}/Everything/arm/os
-    http://fr2.rpmfind.net/linux/fedora-secondary/releases/${version}/Everything/arm/os
-    http://ftp.df.lth.se/pub/fedora-secondary/releases/${version}/Everything/arm/os
+baseurl=http://pidora.proximity.on.ca/pidora/releases/${version}/packages/armv6hl/os
 enabled=0
 gpgcheck=0
 
-[inst-rpi-fedora-updates]
-name=rpi-updates
+[inst-pidora-updates]
+name=inst-pidora-updates
 failovermethod=priority
-baseurl=
-    http://fedora-mirror02.rbc.ru/pub/fedora-secondary/updates/${version}/arm
-    http://mirror.kiewel-online.ch/secondary/updates/${version}/arm
-    http://archive.nl.eu.kernel.org/fedora-secondary/updates/${version}/arm
-    http://ftp.heanet.ie/mirrors/fedora-secondary/updates/${version}/arm
-    http://mirror.proserve.nl/fedora-secondary/updates/${version}/arm
-    http://fr2.rpmfind.net/linux/fedora-secondary/updates/${version}/arm
-    http://ftp.df.lth.se/pub/fedora-secondary/updates/${version}/arm
-    http://archive.eu.kernel.org/fedora-secondary/updates/${version}/arm
+baseurl=http://pidora.proximity.on.ca/pidora/updates/${version}/armhfp
 enabled=0
 gpgcheck=0
 
