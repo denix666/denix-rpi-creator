@@ -23,6 +23,8 @@ work_dir="/srv/denix-rpi"
 sd_rootfsdir="${work_dir}/sd_rootfsdir"
 image="${work_dir}/denix-${version}-${dest_arch}.img"
 fsdir=${image}p2
+log_file="/var/log/rpi-creator.log"
+
 
 [ -f /etc/denix-colors ] && . /etc/denix-colors
 
@@ -45,6 +47,11 @@ if ! [ "$(uname -m)" = "${dest_arch}" ]; then
     exit 1
 fi
 
+# Backup old log file
+if [ -f ${log_file} ]; then
+    mv ${log_file} ${log_file}.`date +%Y%m%d%H%M`
+fi
+
 add_repos() {
     $color_BYellow
     echo
@@ -59,39 +66,24 @@ add_repos() {
     # Add repos to system
     ##########################################################################
     cat > /etc/yum.repos.d/inst-rpi.repo << EOF
-[inst-rpi-remix]
-name=rpi-remix
+[inst-pidora-rpfr]
+name=inst-pidora-rpfr
 failovermethod=priority
-baseurl=http://scotland.proximity.on.ca/~agreene/raspberrypi/raspberrypi-fedora-remix/${version}/packages/arm/os/
+baseurl=http://pidora.proximity.on.ca/pidora/releases/${version}/packages/armhfp/os
 enabled=0
 gpgcheck=0
 
-[inst-rpi-fedora]
-name=Fedora
+[inst-pidora]
+name=inst-pidora
 failovermethod=priority
-baseurl=
-    http://archive.eu.kernel.org/fedora-secondary/releases/${version}/Everything/arm/os
-    http://mirror.proserve.nl/fedora-secondary/releases/${version}/Everything/arm/os
-    http://ftp.cc.uoc.gr/mirrors/linux/fedora-secondary/releases/${version}/Everything/arm/os
-    http://archive.nl.eu.kernel.org/fedora-secondary/releases/${version}/Everything/arm/os
-    http://fedora-mirror02.rbc.ru/pub/fedora-secondary/releases/${version}/Everything/arm/os
-    http://fr2.rpmfind.net/linux/fedora-secondary/releases/${version}/Everything/arm/os
-    http://ftp.df.lth.se/pub/fedora-secondary/releases/${version}/Everything/arm/os
+baseurl=http://pidora.proximity.on.ca/pidora/releases/${version}/packages/armhfp/os
 enabled=0
 gpgcheck=0
 
-[inst-rpi-fedora-updates]
-name=rpi-updates
+[inst-pidora-updates]
+name=inst-pidora-updates
 failovermethod=priority
-baseurl=
-    http://fedora-mirror02.rbc.ru/pub/fedora-secondary/updates/${version}/arm
-    http://mirror.kiewel-online.ch/secondary/updates/${version}/arm
-    http://archive.nl.eu.kernel.org/fedora-secondary/updates/${version}/arm
-    http://ftp.heanet.ie/mirrors/fedora-secondary/updates/${version}/arm
-    http://mirror.proserve.nl/fedora-secondary/updates/${version}/arm
-    http://fr2.rpmfind.net/linux/fedora-secondary/updates/${version}/arm
-    http://ftp.df.lth.se/pub/fedora-secondary/updates/${version}/arm
-    http://archive.eu.kernel.org/fedora-secondary/updates/${version}/arm
+baseurl=http://pidora.proximity.on.ca/pidora/updates/${version}/armhfp
 enabled=0
 gpgcheck=0
 
@@ -99,9 +91,9 @@ gpgcheck=0
 name=Denix repo
 failovermethod=priority
 baseurl=
-    http://mirror.os.vc/denix-repo/yum/base/${version}/arm
-    http://fedora.os.vc/yum/base/${version}/arm
-    http://web.macam.ac.il/~denix/fedora/yum/base/${version}/arm
+    http://mirror.os.vc/denix-repo/yum/base/${version}/armhfp
+    http://fedora.os.vc/yum/base/${version}/armhfp
+    http://web.macam.ac.il/~denix/fedora/yum/base/${version}/armhfp
 enabled=0
 gpgcheck=0
 EOF
@@ -133,22 +125,30 @@ install_sd_rootfsdir() {
     yum clean all
     yum install -y \
 	--disablerepo=\* \
-	--enablerepo=inst-rpi-remix \
-	--enablerepo=inst-rpi-fedora \
-	--enablerepo=inst-rpi-fedora-updates \
+	--enablerepo=inst-pidora-rpfr \
+	--enablerepo=inst-pidora \
+	--enablerepo=inst-pidora-updates \
 	--enablerepo=inst-denix \
 	--installroot="$sd_rootfsdir" \
-        -x fedora-release \
-        -x fedora-release-notes \
-        -x fedora-logos \
-        -x generic-release \
-        -x system-config-date \
-        -x kernel \
-        -x firstboot \
-        -x raspberrypi-firstboot-mod \
-        -x xorg-x11* \
-        -x smolt \
-        -x smolt-firstboot \
+	-x fedora-release \
+	-x fedora-release-notes \
+	-x fedora-logos \
+	-x system-config-date \
+	-x system-config-keyboard \
+	-x system-config-keyboard-base \
+	-x scim* \
+	-x sil-padauk* \
+	-x smc-fonts* \
+	-x smc-meera* \
+	-x kernel \
+	-x kernel-imx \
+	-x kernel-kirkwood \
+	-x firstboot \
+	-x raspberrypi-firstboot-mod \
+	-x xorg-x11* \
+	-x smolt \
+	-x smolt-firstboot \
+	-x stix-fonts \
         -x kernel-kirkwood \
         -x ConsoleKit \
         -x kernel-imx \
@@ -160,16 +160,37 @@ install_sd_rootfsdir() {
         -x ypbind \
         -x coolkey \
         -x sendmail \
+        -x un-core* \
+	-x vlgothic* \
+	-x talk \
+	-x thai* \
+	-x abyssinica* \
+	-x anthy* \
+	-x cjkuni* \
+	-x ibus* \
+	-x im-chooser \
+	-x imsettings* \
+	-x iok \
+	-x ipa-pgothic* \
+	-x irqbalance \
+	-x jomolhari* \
+	-x kacst* \
+	-x kasumi \
+	-x khmeros* \
+	-x lklug* \
+	-x lohit* \
+	-x m17n* \
+	-x pcmciautils \
+	-x paktype* \
+        generic-release \
         postfix \
         whois \
         GeoIP \
         firewalld \
-        nc \
+        nmap-ncat \
         NetworkManager \
         system-config-network \
-        raspberrypi-release \
         raspberrypi-vc-firmware \
-        raspberrypi-release-notes \
         raspberrypi-kernel \
         denix-bash \
         denix-colors \
@@ -204,18 +225,18 @@ install_sd_rootfsdir() {
         lftp \
         tree \
         setserial \
-        python-rpi-gpio \
+        python-rpi.gpio \
         wiringpi \
         libbcm2835 \
         file
     $color_Off
 
     if ! [ -e ${sd_rootfsdir}/etc ]; then
-	$color_Red
-	echo "Error! Something wrong! Please check internet connection and try again!"
-	echo "Exiting..."
-	$color_Off
-	exit 1
+        $color_Red
+        echo "Error! Something wrong! Please check internet connection and try again!"
+        echo "Exiting..."
+        $color_Off
+        exit 1
     fi
 }
 
@@ -239,24 +260,24 @@ EOF
 
     rm -rf ${sd_rootfsdir}/etc/yum.repos.d/*
     cat > ${sd_rootfsdir}/etc/yum.repos.d/raspberry.repo << EOF
-[rpi-remix]
-name=rpi-remix
+[pidora-rpfr]
+name=pidora-rpfr
 failovermethod=priority
-baseurl=http://scotland.proximity.on.ca/~agreene/raspberrypi/raspberrypi-fedora-remix/${version}/packages/arm/os/
+baseurl=http://pidora.proximity.on.ca/pidora/releases/${version}/packages/armhfp/os
 enabled=1
 gpgcheck=0
 
-[rpi-fedora]
-name=Fedora
+[pidora]
+name=pidora
 failovermethod=priority
-mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=fedora-${version}&arch=arm
+baseurl=http://pidora.proximity.on.ca/pidora/releases/${version}/packages/armhfp/os
 enabled=1
 gpgcheck=0
 
-[rpi-fedora-updates]
-name=rpi-updates
+[pidora-updates]
+name=pidora-updates
 failovermethod=priority
-mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f${version}&arch=arm
+baseurl=http://pidora.proximity.on.ca/pidora/updates/${version}/armhfp
 enabled=1
 gpgcheck=0
 
@@ -264,9 +285,9 @@ gpgcheck=0
 name=Denix repo
 failovermethod=priority
 baseurl=
-    http://mirror.os.vc/denix-repo/yum/base/${version}/arm
-    http://fedora.os.vc/yum/base/${version}/arm
-    http://web.macam.ac.il/~denix/fedora/yum/base/${version}/arm
+    http://mirror.os.vc/denix-repo/yum/base/${version}/armhfp
+    http://fedora.os.vc/yum/base/${version}/armhfp
+    http://web.macam.ac.il/~denix/fedora/yum/base/${version}/armhfp
 enabled=1
 gpgcheck=0
 EOF
@@ -278,23 +299,23 @@ LABEL="boot"            /boot                   vfat    noauto,comment=systemd.a
 EOF
 
     # /etc/fedora-release
-    ln -s redhat-release ${sd_rootfsdir}/etc/fedora-release
-    echo "Denix release 18 (Spherical Cow)" > ${sd_rootfsdir}/etc/fedora-release
+    ln -s redhat-release ${sd_rootfsdir}/etc/fedora-release | tee ${log_file}
+    echo "Denix release 18 (Spherical Cow)" > ${sd_rootfsdir}/etc/fedora-release | tee ${log_file}
 
     # /etc/hosts
     cat > ${sd_rootfsdir}/etc/hosts << EOF
 127.0.0.1       localhost localhost.localdomain ${rpi_hostname}
 EOF
 
-    chroot  ${sd_rootfsdir} pwconv
-    chroot  ${sd_rootfsdir} grpconv
+    chroot  ${sd_rootfsdir} pwconv | tee ${log_file}
+    chroot  ${sd_rootfsdir} grpconv | tee ${log_file}
 
-    chroot ${sd_rootfsdir} systemctl enable nortc.service
-    chroot ${sd_rootfsdir} systemctl enable ntpdate.service
-    chroot ${sd_rootfsdir} systemctl enable firewalld.service
-    chroot ${sd_rootfsdir} systemctl start getty@ttyAMA0
-    chroot ${sd_rootfsdir} systemctl enable getty@ttyAMA0
-    chroot ${sd_rootfsdir} ln -s /usr/lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@ttyAMA0.service
+    chroot ${sd_rootfsdir} systemctl enable nortc.service | tee ${log_file}
+    chroot ${sd_rootfsdir} systemctl enable ntpdate.service | tee ${log_file}
+    chroot ${sd_rootfsdir} systemctl enable firewalld.service | tee ${log_file}
+    chroot ${sd_rootfsdir} systemctl start getty@ttyAMA0 | tee ${log_file}
+    chroot ${sd_rootfsdir} systemctl enable getty@ttyAMA0 | tee ${log_file}
+    chroot ${sd_rootfsdir} ln -s /usr/lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@ttyAMA0.service | tee ${log_file}
 
     # password for root (password=raspberrypi)
     echo "Setting root password: raspberrypi"
@@ -306,13 +327,13 @@ EOF
     cat > ${sd_rootfsdir}/tmp/optimize-systemd << EOF
 #!/bin/bash
 echo "Optimizing systemd..."
-for i in fedora-storage-init-late.service fedora-storage-init.service plymouth-halt.service plymouth-kexec.service plymouth-poweroff.service plymouth-quit.service plymouth-quit-wait.service plymouth-read-write.service plymouth-reboot.service plymouth-start.service mdmonitor.service mdmonitor-takeover.service auditd.service avahi-daemon.service avahi-daemon.socket bluetooth.target dev-hugepages.mount dev-mqueue.mount fedora-configure.service fedora-loadmodules.service fedora-readonly.service ip6tables.service sys-kernel-config.mount sys-kernel-debug.mount systemd-readahead-collect.service systemd-readahead-done.service systemd-readahead-done.timer systemd-readahead-replay.service
-
-        do systemctl mask \$i
-        done
+for i in fedora-storage-init-late.service fedora-storage-init.service plymouth-halt.service plymouth-kexec.service plymouth-poweroff.service plymouth-quit.service plymouth-quit-wait.service plymouth-read-write.service plymouth-reboot.service plymouth-start.service mdmonitor.service mdmonitor-takeover.service auditd.service avahi-daemon.service avahi-daemon.socket bluetooth.target dev-hugepages.mount dev-mqueue.mount fedora-configure.service fedora-loadmodules.service fedora-readonly.service ip6tables.service sys-kernel-config.mount sys-kernel-debug.mount systemd-readahead-collect.service systemd-readahead-done.service systemd-readahead-done.timer systemd-readahead-replay.service; do
+    systemctl disable \$i
+    systemctl mask \$i
+done
 EOF
     chmod 0755 ${sd_rootfsdir}/tmp/optimize-systemd
-    chroot ${sd_rootfsdir} /tmp/optimize-systemd
+    chroot ${sd_rootfsdir} /tmp/optimize-systemd | tee ${log_file}
     rm -f ${sd_rootfsdir}/tmp/optimize-systemd
 
     # Add script to resize partition at first boot
@@ -333,15 +354,15 @@ if [ -f /.rootfs-repartition ]; then
     reboot
 else
     if [ -f /.rootfs-resize ]; then
-	echo "Resizing the root partition..."
-	ionice -n 7 resize2fs -p /dev/mmcblk0p2
-	rm -f /.rootfs-resize
-	
-	echo "Creating the swap file..."
-	dd if=/dev/zero of=/swapfile bs=1M count=128
-	mkswap /swapfile
-	swapon /swapfile
-	echo "/swapfile	none	swap	sw	0 0" >> /etc/fstab
+        echo "Resizing the root partition..."
+        ionice -n 7 resize2fs -p /dev/mmcblk0p2
+        rm -f /.rootfs-resize
+
+        echo "Creating the swap file..."
+        dd if=/dev/zero of=/swapfile bs=1M count=128
+        mkswap /swapfile
+        swapon /swapfile
+        echo "/swapfile none    swap    sw      0 0" >> /etc/fstab
     fi
 fi
 EOF_RESIZEFS
@@ -377,7 +398,7 @@ EOF
     # Add issue message
     cat > ${sd_rootfsdir}/etc/issue << EOF_ISSUE
 Welcome to DeniX-RPI
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 EOF_ISSUE
 
@@ -386,8 +407,11 @@ EOF_ISSUE
     echo "ServerAliveInterval 100" >> ${sd_rootfsdir}/etc/ssh/ssh_config
     sed -i 's/^#Banner.*$/Banner \/etc\/issue/g' ${sd_rootfsdir}/etc/ssh/sshd_config
 
+	# Rename kernel.img file for boot purposes
+	mv /boot/kernel*.img /boot/kernel.img
+
     # Disable root mail notifications
-    echo "root:		/dev/null" >> ${sd_rootfsdir}/etc/aliases
+    echo "root:         /dev/null" >> ${sd_rootfsdir}/etc/aliases
     chroot ${sd_rootfsdir} newaliases >/dev/null
 
     # History search
@@ -429,8 +453,8 @@ EOF
 
     # Edit login.defs
     echo "Setting login.defs..."
-    sed -i 's/^UID_MIN.*$/UID_MIN			1000/g' ${sd_rootfsdir}/etc/login.defs
-    sed -i 's/^GID_MIN.*$/GID_MIN			1000/g' ${sd_rootfsdir}/etc/login.defs
+    sed -i 's/^UID_MIN.*$/UID_MIN                       1000/g' ${sd_rootfsdir}/etc/login.defs
+    sed -i 's/^GID_MIN.*$/GID_MIN                       1000/g' ${sd_rootfsdir}/etc/login.defs
 
     # Optimizing system
     echo "Optimizing system..."
@@ -472,11 +496,11 @@ prepare_image() {
     $color_BYellow
     echo "Creating image file..."
     $color_Off
-    dd if=/dev/zero of=${image} bs=1M count=${IMGSIZE}
+    dd if=/dev/zero of=${image} bs=1M count=${IMGSIZE} | tee ${log_file}
     $color_BYellow
     echo "Creating partitions..."
     $color_Off
-    echo -e "n\np\n1\n\n+51M\nn\np\n2\n\n\nt\n1\nc\na\n1\np\nw\n" | fdisk ${image}
+    echo -e "n\np\n1\n\n+51M\nn\np\n2\n\n\nt\n1\nc\na\n1\np\nw\n" | fdisk ${image} | tee ${log_file}
     sleep 2
 
     # Create image devmappings
@@ -484,26 +508,26 @@ prepare_image() {
     $color_BYellow
     echo "Creating device mappings..."
     $color_Off
-    kpartx -av ${image}
+    kpartx -av ${image} | tee ${log_file}
     sleep 2
 
     # Get partitions and make them accessible via loopback+dm
     #########################################################
-    losetup -a
-    loopback=$( losetup -a | grep "${image}" | cut -d":" -f1 | xargs -I {} basename {} )
+    losetup -a | tee ${log_file}
+    loopback=$( losetup -a | grep "${image}" | cut -d":" -f1 | xargs -I {} basename {} ) | tee ${log_file}
 
     # Create filesystems
     ####################
     $color_BYellow
     echo "Formatting boot partition..."
     $color_Off
-    mkfs -t vfat -n boot   /dev/mapper/${loopback}p1
+    mkfs -t vfat -n boot   /dev/mapper/${loopback}p1 | tee ${log_file}
     sleep 1
 
     $color_BYellow
     echo "Formatting root partition..."
     $color_Off
-    mkfs -t ext4 -L rootfs /dev/mapper/${loopback}p2
+    mkfs -t ext4 -L rootfs /dev/mapper/${loopback}p2 | tee ${log_file}
 
     # Mount filesystems
     ###################
@@ -547,8 +571,8 @@ copy_all() {
     echo "Copying boot..."
     cp -rp ${sd_rootfsdir}/boot/* ${fsdir}/boot
     for i in bin etc home lib media mnt opt root run sbin srv tmp usr var; do
-	echo "Copying $i..."
-	cp -rp ${sd_rootfsdir}/$i ${fsdir}
+        echo "Copying $i..."
+        cp -rp ${sd_rootfsdir}/$i ${fsdir}
     done
     touch ${fsdir}/.rootfs-repartition
     $color_Off
@@ -598,36 +622,36 @@ close_image() {
     $color_BYellow
     echo "Unmounting partitions..."
     $color_Off
-    umount ${image}p2/boot
-    umount ${image}p2
-    rmdir  ${image}p2
+    umount ${image}p2/boot | tee ${log_file}
+    umount ${image}p2 | tee ${log_file}
+    rmdir  ${image}p2 | tee ${log_file}
 
     # Delete image devmappings
     ##########################
     $color_BYellow
     echo "Deleting device mappings..."
     $color_Off
-    kpartx -dv $image && LAST_ERR=0 || LAST_ERR=1
+    kpartx -dv $image && LAST_ERR=0 || LAST_ERR=1 | tee ${log_file}
 
     # Print message
     ###############
     if [ "${LAST_ERR}"="0" ]; then
-	$color_Yellow
-	echo
-	echo "Your image is ready and can be found in: ${image}"
-	echo "Write it to SD card with this command:"
-	echo "dd if=denix-${version}-${dest_arch}.img of=/dev/xxx bs=1M"
-	echo
-	echo "The first boot takes a long time because of resizing, repartitioning and making swap file."
-	echo "Have a nice usage!"
-	echo
+        $color_Yellow
+        echo
+        echo "Your image is ready and can be found in: ${image}"
+        echo "Write it to SD card with this command:"
+        echo "dd if=denix-${version}-${dest_arch}.img of=/dev/xxx bs=1M"
+        echo
+        echo "The first boot takes a long time because of resizing, repartitioning and making swap file."
+        echo "Have a nice usage!"
+        echo
     else
-	$color_Red
-	echo
-	echo "Errors found!"
-	echo "Exiting..."
-	$color_Off
-	exit 1
+        $color_Red
+        echo
+        echo "Errors found!"
+        echo "Exiting..."
+        $color_Off
+        exit 1
     fi
 }
 
@@ -636,63 +660,63 @@ show_help() {
     echo "Usage: $0 <options>"
     echo
     echo "Options:"
-    echo "	--add_repos  - Add helper repositories (as disabled) to current system for installation proccess"
-    echo "	--install_sd_rootfsdir  - Install sd root file system"
-    echo "	--post_installation  - Post installation proccess, patching the root file system"
-    echo "	--prepare_image  - Create and prepare sd image file"
-    echo "	--copy_all  - Copy installed sd root file system to the sd image file"
-    echo "	--close_image  - Close image file and make it ready to use"
-    echo "	--help  - Show this help message"
-    echo "	--reinstall_rootfs  - Reinstall all packages in the sd root file system"
-    echo "	--all  - Build completly the system"
+    echo "      --add_repos  - Add helper repositories (as disabled) to current system for installation proccess"
+    echo "      --install_sd_rootfsdir  - Install sd root file system"
+    echo "      --post_installation  - Post installation proccess, patching the root file system"
+    echo "      --prepare_image  - Create and prepare sd image file"
+    echo "      --copy_all  - Copy installed sd root file system to the sd image file"
+    echo "      --close_image  - Close image file and make it ready to use"
+    echo "      --help  - Show this help message"
+    echo "      --reinstall_rootfs  - Reinstall all packages in the sd root file system"
+    echo "      --all  - Build completly the system"
     $color_Off
 }
 
 # Get the user arguments
 case $1 in
-	-h|--help)
-	    show_help
-	    exit 0
-	    ;;
-	--add_repos)
-	    add_repos
-	    exit 0
-	    ;;
-	--install_sd_rootfsdir)
-	    install_sd_rootfsdir
-	    exit 0
-	    ;;
-	--prepare_image)
-	    prepare_image
-	    exit 0
-	    ;;
-	--reinstall_rootfs)
-	    reinstall_rootfs
-	    exit 0
-	    ;;
-	--copy_all)
-	    copy_all
-	    exit 0
-	    ;;
-	--post_installation)
-	    post_installation
-	    exit 0
-	    ;;
-	--close_image)
-	    close_image
-	    exit 0
-	    ;;
-	--all)
-	    add_repos
-	    install_sd_rootfsdir
-	    post_installation
-	    prepare_image
-	    copy_all
-	    close_image
-	    exit 0
-	    ;;
-	*)
-	    show_help
-	    exit 0
-	    ;;
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        --add_repos)
+            add_repos
+            exit 0
+            ;;
+        --install_sd_rootfsdir)
+            install_sd_rootfsdir
+            exit 0
+            ;;
+        --prepare_image)
+            prepare_image
+            exit 0
+            ;;
+        --reinstall_rootfs)
+            reinstall_rootfs
+            exit 0
+            ;;
+        --copy_all)
+            copy_all
+            exit 0
+            ;;
+        --post_installation)
+            post_installation
+            exit 0
+            ;;
+        --close_image)
+            close_image
+            exit 0
+            ;;
+        --all)
+            add_repos
+            install_sd_rootfsdir
+            post_installation
+            prepare_image
+            copy_all
+            close_image
+            exit 0
+            ;;
+        *)
+            show_help
+            exit 0
+            ;;
 esac
