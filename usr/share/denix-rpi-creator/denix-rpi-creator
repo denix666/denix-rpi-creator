@@ -23,8 +23,6 @@ work_dir="/srv/denix-rpi"
 sd_rootfsdir="${work_dir}/sd_rootfsdir"
 image="${work_dir}/denix-${version}-${dest_arch}.img"
 fsdir=${image}p2
-log_file="/var/log/rpi-creator.log"
-
 
 [ -f /etc/denix-colors ] && . /etc/denix-colors
 
@@ -45,11 +43,6 @@ if ! [ "$(uname -m)" = "${dest_arch}" ]; then
     echo "Exiting..."
     $color_Off
     exit 1
-fi
-
-# Backup old log file
-if [ -f ${log_file} ]; then
-    mv ${log_file} ${log_file}.`date +%Y%m%d%H%M`
 fi
 
 add_repos() {
@@ -299,23 +292,23 @@ LABEL="boot"            /boot                   vfat    noauto,comment=systemd.a
 EOF
 
     # /etc/fedora-release
-    ln -s redhat-release ${sd_rootfsdir}/etc/fedora-release | tee ${log_file}
-    echo "Denix release 18 (Spherical Cow)" > ${sd_rootfsdir}/etc/fedora-release | tee ${log_file}
+    ln -s redhat-release ${sd_rootfsdir}/etc/fedora-release
+    echo "Denix release 18 (Spherical Cow)" > ${sd_rootfsdir}/etc/fedora-release
 
     # /etc/hosts
     cat > ${sd_rootfsdir}/etc/hosts << EOF
 127.0.0.1       localhost localhost.localdomain ${rpi_hostname}
 EOF
 
-    chroot  ${sd_rootfsdir} pwconv | tee ${log_file}
-    chroot  ${sd_rootfsdir} grpconv | tee ${log_file}
+    chroot  ${sd_rootfsdir} pwconv
+    chroot  ${sd_rootfsdir} grpconv
 
-    chroot ${sd_rootfsdir} systemctl enable nortc.service | tee ${log_file}
-    chroot ${sd_rootfsdir} systemctl enable ntpdate.service | tee ${log_file}
-    chroot ${sd_rootfsdir} systemctl enable firewalld.service | tee ${log_file}
-    chroot ${sd_rootfsdir} systemctl start getty@ttyAMA0 | tee ${log_file}
-    chroot ${sd_rootfsdir} systemctl enable getty@ttyAMA0 | tee ${log_file}
-    chroot ${sd_rootfsdir} ln -s /usr/lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@ttyAMA0.service | tee ${log_file}
+    chroot ${sd_rootfsdir} systemctl enable nortc.service
+    chroot ${sd_rootfsdir} systemctl enable ntpdate.service
+    chroot ${sd_rootfsdir} systemctl enable firewalld.service
+    chroot ${sd_rootfsdir} systemctl start getty@ttyAMA0
+    chroot ${sd_rootfsdir} systemctl enable getty@ttyAMA0
+    chroot ${sd_rootfsdir} ln -s /usr/lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@ttyAMA0.service
 
     # password for root (password=raspberrypi)
     echo "Setting root password: raspberrypi"
@@ -333,7 +326,7 @@ for i in fedora-storage-init-late.service fedora-storage-init.service plymouth-h
 done
 EOF
     chmod 0755 ${sd_rootfsdir}/tmp/optimize-systemd
-    chroot ${sd_rootfsdir} /tmp/optimize-systemd | tee ${log_file}
+    chroot ${sd_rootfsdir} /tmp/optimize-systemd
     rm -f ${sd_rootfsdir}/tmp/optimize-systemd
 
     # Add script to resize partition at first boot
@@ -407,8 +400,8 @@ EOF_ISSUE
     echo "ServerAliveInterval 100" >> ${sd_rootfsdir}/etc/ssh/ssh_config
     sed -i 's/^#Banner.*$/Banner \/etc\/issue/g' ${sd_rootfsdir}/etc/ssh/sshd_config
 
-	# Rename kernel.img file for boot purposes
-	mv /boot/kernel*.img /boot/kernel.img
+    # Rename kernel.img file for boot purposes
+    mv ${sd_rootfsdir}/boot/kernel-*.img ${sd_rootfsdir}/boot/kernel.img
 
     # Disable root mail notifications
     echo "root:         /dev/null" >> ${sd_rootfsdir}/etc/aliases
@@ -496,11 +489,11 @@ prepare_image() {
     $color_BYellow
     echo "Creating image file..."
     $color_Off
-    dd if=/dev/zero of=${image} bs=1M count=${IMGSIZE} | tee ${log_file}
+    dd if=/dev/zero of=${image} bs=1M count=${IMGSIZE}
     $color_BYellow
     echo "Creating partitions..."
     $color_Off
-    echo -e "n\np\n1\n\n+51M\nn\np\n2\n\n\nt\n1\nc\na\n1\np\nw\n" | fdisk ${image} | tee ${log_file}
+    echo -e "n\np\n1\n\n+51M\nn\np\n2\n\n\nt\n1\nc\na\n1\np\nw\n" | fdisk ${image}
     sleep 2
 
     # Create image devmappings
@@ -508,26 +501,26 @@ prepare_image() {
     $color_BYellow
     echo "Creating device mappings..."
     $color_Off
-    kpartx -av ${image} | tee ${log_file}
+    kpartx -av ${image}
     sleep 2
 
     # Get partitions and make them accessible via loopback+dm
     #########################################################
-    losetup -a | tee ${log_file}
-    loopback=$( losetup -a | grep "${image}" | cut -d":" -f1 | xargs -I {} basename {} ) | tee ${log_file}
+    losetup -a
+    loopback=$( losetup -a | grep "${image}" | cut -d":" -f1 | xargs -I {} basename {} )
 
     # Create filesystems
     ####################
     $color_BYellow
     echo "Formatting boot partition..."
     $color_Off
-    mkfs -t vfat -n boot   /dev/mapper/${loopback}p1 | tee ${log_file}
+    mkfs -t vfat -n boot   /dev/mapper/${loopback}p1
     sleep 1
 
     $color_BYellow
     echo "Formatting root partition..."
     $color_Off
-    mkfs -t ext4 -L rootfs /dev/mapper/${loopback}p2 | tee ${log_file}
+    mkfs -t ext4 -L rootfs /dev/mapper/${loopback}p2
 
     # Mount filesystems
     ###################
@@ -622,16 +615,16 @@ close_image() {
     $color_BYellow
     echo "Unmounting partitions..."
     $color_Off
-    umount ${image}p2/boot | tee ${log_file}
-    umount ${image}p2 | tee ${log_file}
-    rmdir  ${image}p2 | tee ${log_file}
+    umount ${image}p2/boot
+    umount ${image}p2
+    rmdir  ${image}p2
 
     # Delete image devmappings
     ##########################
     $color_BYellow
     echo "Deleting device mappings..."
     $color_Off
-    kpartx -dv $image && LAST_ERR=0 || LAST_ERR=1 | tee ${log_file}
+    kpartx -dv $image && LAST_ERR=0 || LAST_ERR=1
 
     # Print message
     ###############
