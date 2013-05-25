@@ -15,7 +15,7 @@
 
 # Set system vars
 #################
-IMGSIZE=1200
+IMGSIZE=1300
 version="18"
 dest_arch="armv6l"
 rpi_hostname="denix.rpi"
@@ -221,7 +221,10 @@ install_sd_rootfsdir() {
         python-rpi.gpio \
         wiringpi \
         libbcm2835 \
-        file
+        file \
+        gcc \
+        python-devel \
+        i2c-tools
     $color_Off
 
     if ! [ -e ${sd_rootfsdir}/etc ]; then
@@ -292,7 +295,6 @@ LABEL="boot"            /boot                   vfat    noauto,comment=systemd.a
 EOF
 
     # /etc/fedora-release
-    ln -s redhat-release ${sd_rootfsdir}/etc/fedora-release
     echo "Denix release 18 (Spherical Cow)" > ${sd_rootfsdir}/etc/fedora-release
 
     # /etc/hosts
@@ -306,6 +308,7 @@ EOF
     chroot ${sd_rootfsdir} systemctl enable nortc.service
     chroot ${sd_rootfsdir} systemctl enable ntpdate.service
     chroot ${sd_rootfsdir} systemctl enable firewalld.service
+    chroot ${sd_rootfsdir} systemctl enable sshd.service
     chroot ${sd_rootfsdir} systemctl start getty@ttyAMA0
     chroot ${sd_rootfsdir} systemctl enable getty@ttyAMA0
     chroot ${sd_rootfsdir} ln -s /usr/lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@ttyAMA0.service
@@ -321,7 +324,6 @@ EOF
 #!/bin/bash
 echo "Optimizing systemd..."
 for i in fedora-storage-init-late.service fedora-storage-init.service plymouth-halt.service plymouth-kexec.service plymouth-poweroff.service plymouth-quit.service plymouth-quit-wait.service plymouth-read-write.service plymouth-reboot.service plymouth-start.service mdmonitor.service mdmonitor-takeover.service auditd.service avahi-daemon.service avahi-daemon.socket bluetooth.target dev-hugepages.mount dev-mqueue.mount fedora-configure.service fedora-loadmodules.service fedora-readonly.service ip6tables.service sys-kernel-config.mount sys-kernel-debug.mount systemd-readahead-collect.service systemd-readahead-done.service systemd-readahead-done.timer systemd-readahead-replay.service; do
-    systemctl disable \$i
     systemctl mask \$i
 done
 EOF
